@@ -360,12 +360,8 @@ export const SizesScreen: React.FC = () => {
                 </View>
 
                 {/* Category Pills */}
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.categoryScroll}
-                    contentContainerStyle={styles.categoryScrollContent}
-                >
+                {/* Category Pills */}
+                <View style={styles.categoryContainer}>
                     {availableCategories.map(cat => (
                         <TouchableOpacity
                             key={cat}
@@ -384,7 +380,7 @@ export const SizesScreen: React.FC = () => {
                             </Text>
                         </TouchableOpacity>
                     ))}
-                </ScrollView>
+                </View>
 
                 {/* Content */}
                 {category === 'bras' ? renderBraCalculator() : renderTable()}
@@ -439,24 +435,21 @@ const styles = StyleSheet.create({
     genderButtonTextActive: {
         color: colors.main,
     },
-    categoryScroll: {
-        // Removed negative margins to keep alignment with content
-    },
-    categoryScrollContent: {
-        // Removed horizontal padding since parent container already has it
+    categoryContainer: {
+        flexDirection: 'row',
         gap: 8,
     },
     categoryPill: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 8,
-        paddingHorizontal: 20,
         paddingVertical: 12,
-        borderRadius: 20,
+        borderRadius: 16,
         backgroundColor: colors.input,
         borderWidth: 1,
         borderColor: colors.subtle,
-        marginRight: 8,
     },
     categoryPillActive: {
         backgroundColor: colors.accent,
