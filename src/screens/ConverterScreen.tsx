@@ -6,101 +6,20 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
-    Modal,
-    FlatList,
-    Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeftRight, ChevronDown, Check, X } from 'lucide-react-native';
+import { ArrowLeftRight } from 'lucide-react-native';
 
 import { LENGTH_UNITS, WEIGHT_UNITS, TEMPERATURE_UNITS } from '../constants';
+import { colors } from '../theme/colors';
+import { PickerModal } from '../components/PickerModal';
+import { PickerButton } from '../components/PickerButton';
 
 enum Category {
     LENGTH = 'Length',
     WEIGHT = 'Weight',
     TEMPERATURE = 'Temperature',
 }
-
-const colors = {
-    main: '#09090b',
-    card: '#18181b',
-    input: '#27272a',
-    subtle: '#3f3f46',
-    primary: '#ffffff',
-    secondary: '#a1a1aa',
-    accent: '#FDDA0D',
-};
-
-// Custom Picker Modal Component
-interface PickerModalProps {
-    visible: boolean;
-    onClose: () => void;
-    title: string;
-    options: { label: string; value: string }[];
-    selectedValue: string;
-    onSelect: (value: string) => void;
-}
-
-const PickerModal: React.FC<PickerModalProps> = ({
-    visible, onClose, title, options, selectedValue, onSelect
-}) => {
-    return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="slide"
-            onRequestClose={onClose}
-        >
-            <Pressable style={styles.modalOverlay} onPress={onClose}>
-                <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>{title}</Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <X size={24} color={colors.secondary} />
-                        </TouchableOpacity>
-                    </View>
-                    <FlatList
-                        data={options}
-                        keyExtractor={(item) => item.value}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity
-                                style={[
-                                    styles.modalOption,
-                                    selectedValue === item.value && styles.modalOptionSelected
-                                ]}
-                                onPress={() => {
-                                    onSelect(item.value);
-                                    onClose();
-                                }}
-                            >
-                                <Text style={[
-                                    styles.modalOptionText,
-                                    selectedValue === item.value && styles.modalOptionTextSelected
-                                ]}>
-                                    {item.label}
-                                </Text>
-                                {selectedValue === item.value && (
-                                    <Check size={20} color={colors.accent} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                    />
-                </View>
-            </Pressable>
-        </Modal>
-    );
-};
-
-// Picker Button Component
-const PickerButton: React.FC<{
-    value: string;
-    onPress: () => void;
-}> = ({ value, onPress }) => (
-    <TouchableOpacity style={styles.pickerButton} onPress={onPress}>
-        <Text style={styles.pickerButtonText} numberOfLines={1}>{value}</Text>
-        <ChevronDown size={18} color={colors.secondary} />
-    </TouchableOpacity>
-);
 
 export const ConverterScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -356,7 +275,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 4,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
     },
     categoryButton: {
         flex: 1,
@@ -365,7 +284,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     categoryButtonActive: {
-        backgroundColor: colors.subtle,
+        backgroundColor: colors.accent,
     },
     categoryButtonText: {
         fontSize: 13,
@@ -373,14 +292,14 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     categoryButtonTextActive: {
-        color: colors.accent,
+        color: colors.main,
     },
     inputSection: {
         backgroundColor: colors.input,
         borderRadius: 16,
         padding: 24,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         gap: 8,
     },
     inputLabel: {
@@ -413,7 +332,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.input,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         paddingHorizontal: 16,
         paddingVertical: 18,
     },
@@ -433,7 +352,7 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         backgroundColor: colors.input,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         alignSelf: 'center',
     },
     swapButtonText: {
@@ -446,14 +365,14 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         alignItems: 'center',
         gap: 8,
     },
     resultValue: {
         fontSize: 48,
         fontWeight: '600',
-        color: colors.accent,
+        color: colors.primary,
         textAlign: 'center',
     },
     resultUnit: {

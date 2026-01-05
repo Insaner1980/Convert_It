@@ -13,70 +13,18 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Flame, Scale, Sparkles, ChevronDown, Check, X, Search, Plus } from 'lucide-react-native';
+import { Flame, Scale, Sparkles, X, Search, Plus, Minus } from 'lucide-react-native';
 
-import { KITCHEN_UNITS, INGREDIENTS, OVEN_MARKS } from '../constants';
+import { KITCHEN_UNITS, INGREDIENTS } from '../constants';
 import { KitchenIngredient } from '../types';
-
-const colors = {
-    main: '#09090b',
-    card: '#18181b',
-    input: '#27272a',
-    subtle: '#3f3f46',
-    primary: '#ffffff',
-    secondary: '#a1a1aa',
-    accent: '#FDDA0D',
-};
+import { colors } from '../theme/colors';
+import { PickerModal } from '../components/PickerModal';
+import { PickerButton } from '../components/PickerButton';
 
 // USDA API Key - Get yours free at: https://fdc.nal.usda.gov/api-key-signup.html
 const USDA_API_KEY = 'sB18vYGMnhcTSZhVkJRgM4NhGduy9jgAs9luiKbE'; // Replace with your API key
 
 type KitchenTab = 'ingredients' | 'oven' | 'special';
-
-// Custom Picker Modal
-const PickerModal: React.FC<{
-    visible: boolean;
-    onClose: () => void;
-    title: string;
-    options: { label: string; value: string }[];
-    selectedValue: string;
-    onSelect: (value: string) => void;
-}> = ({ visible, onClose, title, options, selectedValue, onSelect }) => (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-        <Pressable style={styles.modalOverlay} onPress={onClose}>
-            <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>{title}</Text>
-                    <TouchableOpacity onPress={onClose}>
-                        <X size={24} color={colors.secondary} />
-                    </TouchableOpacity>
-                </View>
-                <FlatList
-                    data={options}
-                    keyExtractor={(item) => item.value}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={[styles.modalOption, selectedValue === item.value && styles.modalOptionSelected]}
-                            onPress={() => { onSelect(item.value); onClose(); }}
-                        >
-                            <Text style={[styles.modalOptionText, selectedValue === item.value && styles.modalOptionTextSelected]}>
-                                {item.label}
-                            </Text>
-                            {selectedValue === item.value && <Check size={20} color={colors.accent} />}
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-        </Pressable>
-    </Modal>
-);
-
-const PickerButton: React.FC<{ value: string; onPress: () => void }> = ({ value, onPress }) => (
-    <TouchableOpacity style={styles.pickerButton} onPress={onPress}>
-        <Text style={styles.pickerButtonText} numberOfLines={1}>{value}</Text>
-        <ChevronDown size={18} color={colors.secondary} />
-    </TouchableOpacity>
-);
 
 // USDA Food Search Result type
 interface USDAFood {
@@ -99,6 +47,8 @@ export const KitchenScreen: React.FC = () => {
     const [ingredientId, setIngredientId] = useState(INGREDIENTS[0].id);
     const [fromUnitId, setFromUnitId] = useState('cup');
     const [toUnitId, setToUnitId] = useState('g');
+    const [ovenTemp, setOvenTemp] = useState(200); // Always stored as Conventional °C
+    const [ovenMode, setOvenMode] = useState<'conventional' | 'fan' | 'fahrenheit'>('conventional');
 
     // Custom ingredients added by user
     const [customIngredients, setCustomIngredients] = useState<KitchenIngredient[]>([]);
@@ -333,24 +283,89 @@ export const KitchenScreen: React.FC = () => {
         </View>
     );
 
-    const renderOven = () => (
-        <View style={styles.content}>
-            <View style={styles.ovenTable}>
-                <View style={styles.ovenHeader}>
-                    <Text style={styles.ovenHeaderCell}>Gas Mark</Text>
-                    <Text style={styles.ovenHeaderCell}>°C</Text>
-                    <Text style={styles.ovenHeaderCell}>°F</Text>
-                </View>
-                {OVEN_MARKS.map((mark, idx) => (
-                    <View key={idx} style={styles.ovenRow}>
-                        <Text style={styles.ovenCell}>{mark.gas}</Text>
-                        <Text style={[styles.ovenCell, styles.ovenCellHighlight]}>{mark.c}°</Text>
-                        <Text style={styles.ovenCell}>{mark.f}°</Text>
+    const renderOven = () => {
+        // Calculate all values based on the stored Conventional °C
+        const conv = ovenTemp;
+        const fan = conv >= 100 ? conv - 20 : (conv > 50 ? conv - 10 : conv);
+        const faren = Math.round((conv * 9 / 5) + 32);
+
+        // Define the data for each mode
+        // COLORS: Active = colors.accent (Yellow), Inactive = colors.secondary (Gray)
+        const modes = {
+            conventional: { label: 'Conventional Oven', value: `${conv}°C`, hint: 'Standard setting', id: 'conventional' },
+            fan: { label: 'Fan / Convection', value: `${fan}°C`, hint: 'Air circulation active', id: 'fan' },
+            fahrenheit: { label: 'Fahrenheit', value: `${faren}°F`, hint: 'US Recipes', id: 'fahrenheit' }
+        };
+
+        const current = modes[ovenMode];
+
+        const adjustTemp = (direction: 1 | -1) => {
+            let amount = 5; // Default C step
+            if (ovenMode === 'fahrenheit') amount = 10; // F step
+
+            let newConv = conv;
+
+            if (ovenMode === 'conventional' || ovenMode === 'fan') {
+                newConv = conv + (5 * direction);
+            } else {
+                // Adjust F directly-ish
+                const targetF = faren + (amount * direction);
+                // Convert back to C and round to nearest 5
+                newConv = Math.round((targetF - 32) * 5 / 9 / 5) * 5;
+            }
+
+            setOvenTemp(Math.max(0, Math.min(300, newConv)));
+        };
+
+        // Helper to render a result card that acts as a mode switch
+        const renderResultCard = (modeKey: 'conventional' | 'fan' | 'fahrenheit') => {
+            if (modeKey === ovenMode) return null;
+            const m = modes[modeKey];
+            return (
+                <TouchableOpacity
+                    key={modeKey}
+                    style={[styles.ovenResultCard, { borderColor: colors.subtle }]}
+                    onPress={() => setOvenMode(modeKey)}
+                >
+                    <Text style={[styles.ovenResultLabel, { color: colors.secondary }]}>{m.label}</Text>
+                    <Text style={[styles.ovenResultValue, { color: colors.primary }]}>{m.value}</Text>
+                    <Text style={styles.ovenResultHint}>Tap to switch</Text>
+                </TouchableOpacity>
+            );
+        };
+
+        return (
+            <View style={styles.content}>
+                <View style={[styles.section, { gap: 24 }]}>
+                    <Text style={styles.sectionLabel}>ELECTRIC OVEN CONVERTER</Text>
+
+                    {/* Main Control */}
+                    <View style={[styles.ovenControlCard, { borderColor: colors.subtle }]}>
+                        <Text style={[styles.ovenControlLabel, { color: colors.secondary }]}>{current.label}</Text>
+                        <View style={styles.ovenControlRow}>
+                            <TouchableOpacity onPress={() => adjustTemp(-1)} style={styles.tempButton}>
+                                <Minus size={24} color={colors.accent} />
+                            </TouchableOpacity>
+                            <View style={{ alignItems: 'center' }}>
+                                <Text style={[styles.ovenMainValue, { color: colors.primary }]}>{current.value}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => adjustTemp(1)} style={[styles.tempButton, { backgroundColor: colors.accent + '20', borderColor: colors.subtle }]}>
+                                <Plus size={24} color={colors.accent} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.ovenHint}>{current.hint}</Text>
                     </View>
-                ))}
+
+                    {/* Results / Switches */}
+                    <View style={styles.ovenResultsRow}>
+                        {renderResultCard('conventional')}
+                        {renderResultCard('fan')}
+                        {renderResultCard('fahrenheit')}
+                    </View>
+                </View>
             </View>
-        </View>
-    );
+        );
+    };
 
     const renderSpecial = () => (
         <View style={styles.content}>
@@ -485,17 +500,17 @@ export const KitchenScreen: React.FC = () => {
                 <View style={styles.tabContainer}>
                     <TabButton
                         tab="ingredients"
-                        icon={<Scale size={16} color={activeTab === 'ingredients' ? colors.accent : colors.secondary} />}
+                        icon={<Scale size={16} color={activeTab === 'ingredients' ? colors.main : colors.secondary} />}
                         label="Ingredients"
                     />
                     <TabButton
                         tab="oven"
-                        icon={<Flame size={16} color={activeTab === 'oven' ? colors.accent : colors.secondary} />}
+                        icon={<Flame size={16} color={activeTab === 'oven' ? colors.main : colors.secondary} />}
                         label="Oven"
                     />
                     <TabButton
                         tab="special"
-                        icon={<Sparkles size={16} color={activeTab === 'special' ? colors.accent : colors.secondary} />}
+                        icon={<Sparkles size={16} color={activeTab === 'special' ? colors.main : colors.secondary} />}
                         label="Quick Ref"
                     />
                 </View>
@@ -547,7 +562,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 4,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
     },
     tabButton: {
         flex: 1,
@@ -558,9 +573,9 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 12,
     },
-    tabButtonActive: { backgroundColor: colors.subtle },
+    tabButtonActive: { backgroundColor: colors.accent },
     tabButtonText: { fontSize: 12, fontWeight: '500', color: colors.secondary },
-    tabButtonTextActive: { color: colors.accent },
+    tabButtonTextActive: { color: colors.main },
     content: { gap: 20 },
     section: { gap: 8 },
     sectionHeader: {
@@ -587,7 +602,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.input,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         paddingHorizontal: 16,
         paddingVertical: 18,
     },
@@ -597,7 +612,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         gap: 8,
     },
     inputLabel: { fontSize: 14, fontWeight: '500', color: colors.secondary },
@@ -610,17 +625,17 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         alignItems: 'center',
         gap: 8,
     },
-    resultValue: { fontSize: 48, fontWeight: '600', color: colors.accent },
+    resultValue: { fontSize: 48, fontWeight: '600', color: colors.primary },
     resultUnit: { fontSize: 18, color: colors.secondary },
     ovenTable: {
         backgroundColor: colors.input,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         overflow: 'hidden',
     },
     ovenHeader: {
@@ -638,7 +653,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 24,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         gap: 16,
     },
     specialTitle: { fontSize: 18, fontWeight: '600', color: colors.primary, marginBottom: 8 },
@@ -717,4 +732,18 @@ const styles = StyleSheet.create({
         zIndex: 10,
     },
     loadingText: { color: colors.primary, marginTop: 16, fontSize: 16 },
+
+    // Oven Converter Styles
+    ovenControlCard: { backgroundColor: colors.input, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.subtle, gap: 16 },
+    ovenControlLabel: { fontSize: 14, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' },
+    ovenControlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+    tempButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.subtle + '40', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.subtle },
+    ovenMainValue: { fontSize: 56, fontWeight: '300', color: colors.primary },
+    ovenHint: { fontSize: 13, color: colors.secondary, textAlign: 'center', marginTop: 8 },
+
+    ovenResultsRow: { flexDirection: 'row', gap: 12 },
+    ovenResultCard: { flex: 1, backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 4 },
+    ovenResultLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
+    ovenResultValue: { fontSize: 28, fontWeight: '600', color: colors.primary, marginTop: 4 },
+    ovenResultHint: { fontSize: 11, color: colors.secondary, textAlign: 'center' },
 });

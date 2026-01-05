@@ -20,18 +20,9 @@ import { KitchenScreen } from './src/screens/KitchenScreen';
 import { CurrencyScreen } from './src/screens/CurrencyScreen';
 import { ToolsScreen } from './src/screens/ToolsScreen';
 
-const Tab = createBottomTabNavigator();
+import { colors } from './src/theme/colors';
 
-// Theme colors
-const colors = {
-  main: '#09090b',
-  card: '#18181b',
-  input: '#27272a',
-  subtle: '#3f3f46',
-  primary: '#ffffff',
-  secondary: '#a1a1aa',
-  accent: '#FDDA0D',
-};
+const Tab = createBottomTabNavigator();
 
 function TabNavigator() {
   const insets = useSafeAreaInsets();

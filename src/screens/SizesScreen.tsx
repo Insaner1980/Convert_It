@@ -19,16 +19,8 @@ import {
     BRA_BANDS_EU, BRA_CUPS_EU, BRA_BAND_MAP, BRA_CUP_MAP
 } from '../constants';
 import { Gender, SizeCategory, SizeRow } from '../types';
-
-const colors = {
-    main: '#09090b',
-    card: '#18181b',
-    input: '#27272a',
-    subtle: '#3f3f46',
-    primary: '#ffffff',
-    secondary: '#a1a1aa',
-    accent: '#FDDA0D',
-};
+import { colors } from '../theme/colors';
+import { PickerButton } from '../components/PickerButton';
 
 const REGIONS = [
     { id: 'eu', label: 'Europe (EU)' },
@@ -38,7 +30,7 @@ const REGIONS = [
     { id: 'au', label: 'Australia / NZ' },
 ];
 
-// Custom Picker Modal Component
+// Local Picker Modal with 'any' value type (specific to SizesScreen for number/string mix)
 interface PickerModalProps {
     visible: boolean;
     onClose: () => void;
@@ -98,20 +90,6 @@ const PickerModal: React.FC<PickerModalProps> = ({
     );
 };
 
-// Custom Picker Button
-interface PickerButtonProps {
-    label: string;
-    value: string;
-    onPress: () => void;
-}
-
-const PickerButton: React.FC<PickerButtonProps> = ({ label, value, onPress }) => (
-    <TouchableOpacity style={styles.pickerButton} onPress={onPress}>
-        <Text style={styles.pickerButtonText}>{value}</Text>
-        <ChevronDown size={18} color={colors.secondary} />
-    </TouchableOpacity>
-);
-
 export const SizesScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const [gender, setGender] = useState<Gender>('women');
@@ -160,7 +138,7 @@ export const SizesScreen: React.FC = () => {
     }, [gender, category]);
 
     const getCategoryIcon = (cat: SizeCategory) => {
-        const iconProps = { size: 16, color: category === cat ? colors.accent : colors.secondary };
+        const iconProps = { size: 16, color: category === cat ? colors.main : colors.secondary };
         switch (cat) {
             case 'shoes': return <Footprints {...iconProps} />;
             case 'tops': return <Shirt {...iconProps} />;
@@ -442,7 +420,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 4,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
     },
     genderButton: {
         flex: 1,
@@ -451,7 +429,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     genderButtonActive: {
-        backgroundColor: colors.subtle,
+        backgroundColor: colors.accent,
     },
     genderButtonText: {
         fontSize: 14,
@@ -459,7 +437,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     genderButtonTextActive: {
-        color: colors.accent,
+        color: colors.main,
     },
     categoryScroll: {
         marginHorizontal: -24,
@@ -481,7 +459,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     categoryPillActive: {
-        backgroundColor: colors.subtle,
+        backgroundColor: colors.accent,
         borderColor: colors.accent,
     },
     categoryPillText: {
@@ -490,13 +468,13 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     categoryPillTextActive: {
-        color: colors.accent,
+        color: colors.main,
     },
     tableContainer: {
         backgroundColor: colors.input,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         overflow: 'hidden',
     },
     tableHeader: {
@@ -547,7 +525,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 20,
         borderWidth: 1,
-        borderColor: colors.accent,
+        borderColor: colors.subtle,
         gap: 16,
     },
     braRow: {
@@ -584,7 +562,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.main,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: colors.accent + '80',
+        borderColor: colors.subtle + '80',
         paddingHorizontal: 16,
         paddingVertical: 16,
     },
@@ -601,12 +579,12 @@ const styles = StyleSheet.create({
         backgroundColor: colors.input,
         borderRadius: 16,
         padding: 20,
-        borderWidth: 2,
-        borderColor: colors.subtle,
+        borderWidth: 1, // Reduced width slightly for elegance? Or keep 2? User likes yellow borders.
+        borderColor: colors.subtle, // ALWAYS YELLOW
     },
     resultRowSelected: {
-        borderColor: colors.accent,
-        backgroundColor: colors.accent + '15',
+        // Border is already yellow
+        backgroundColor: colors.accent + '10', // Very subtle tint
     },
     resultRowLeft: {
         flexDirection: 'row',
@@ -616,10 +594,11 @@ const styles = StyleSheet.create({
     resultRowLabel: {
         fontSize: 14,
         fontWeight: '500',
-        color: colors.secondary,
+        color: colors.secondary, // Inactive Gray
     },
     resultRowLabelSelected: {
-        color: colors.primary,
+        color: colors.primary, // Active White
+        fontWeight: '700',
     },
     selectedBadge: {
         backgroundColor: colors.accent,
@@ -636,10 +615,10 @@ const styles = StyleSheet.create({
     resultRowValue: {
         fontSize: 24,
         fontWeight: '700',
-        color: colors.primary,
+        color: colors.secondary, // Inactive Gray
     },
     resultRowValueSelected: {
-        color: colors.accent,
+        color: colors.primary, // Active White
     },
     // Modal Styles
     modalOverlay: {
