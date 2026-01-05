@@ -440,10 +440,10 @@ const styles = StyleSheet.create({
         color: colors.main,
     },
     categoryScroll: {
-        marginHorizontal: -24,
+        // Removed negative margins to keep alignment with content
     },
     categoryScrollContent: {
-        paddingHorizontal: 24,
+        // Removed horizontal padding since parent container already has it
         gap: 8,
     },
     categoryPill: {
