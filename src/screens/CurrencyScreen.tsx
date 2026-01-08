@@ -3,17 +3,20 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity,
     ScrollView,
     StyleSheet,
+    TouchableOpacity,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeftRight } from 'lucide-react-native';
 
 import { CURRENCIES } from '../constants';
 import { colors } from '../theme/colors';
+import { fontFamily } from '../theme/typography';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
+import { AnimatedPressable } from '../components/AnimatedPressable';
 
 export const CurrencyScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
@@ -23,6 +26,13 @@ export const CurrencyScreen: React.FC = () => {
 
     const [fromModalVisible, setFromModalVisible] = useState(false);
     const [toModalVisible, setToModalVisible] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async (text: string) => {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
 
     const result = useMemo(() => {
         const val = parseFloat(value);
@@ -90,10 +100,10 @@ export const CurrencyScreen: React.FC = () => {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.swapButton} onPress={handleSwap}>
+                    <AnimatedPressable style={styles.swapButton} onPress={handleSwap}>
                         <ArrowLeftRight color={colors.accent} size={20} />
                         <Text style={styles.swapButtonText}>Swap</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
 
                     <View style={styles.currencyField}>
                         <Text style={styles.currencyLabel}>TO</Text>
@@ -105,13 +115,22 @@ export const CurrencyScreen: React.FC = () => {
                 </View>
 
                 {/* Result */}
-                <View style={styles.resultContainer}>
+                <TouchableOpacity
+                    style={styles.resultContainer}
+                    onPress={() => copyToClipboard(`${toCurrencyData?.symbol}${result}`)}
+                    activeOpacity={0.7}
+                >
+                    {copied && (
+                        <View style={styles.copiedBadge}>
+                            <Text style={styles.copiedText}>Copied!</Text>
+                        </View>
+                    )}
                     <View style={styles.resultRow}>
                         <Text style={styles.resultSymbol}>{toCurrencyData?.symbol}</Text>
                         <Text style={styles.resultValue}>{result}</Text>
                     </View>
                     <Text style={styles.resultCurrency}>{toCurrencyData?.name}</Text>
-                </View>
+                </TouchableOpacity>
 
                 {/* Exchange Rate Info */}
                 <View style={styles.rateInfo}>
@@ -144,15 +163,15 @@ export const CurrencyScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.main },
-    header: { paddingHorizontal: 24, paddingVertical: 16 },
-    headerTitle: { fontSize: 28, fontWeight: '600', color: colors.primary },
+    header: { paddingHorizontal: 16, paddingVertical: 16 },
+    headerTitle: { fontFamily, fontSize: 28, fontWeight: '600', color: colors.primary },
     headerSubtitle: { fontSize: 12, color: colors.secondary, marginTop: 4 },
     scrollView: { flex: 1 },
-    scrollContent: { paddingHorizontal: 24, gap: 24 },
+    scrollContent: { paddingHorizontal: 16, gap: 16 },
     inputSection: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         gap: 8,
@@ -164,18 +183,6 @@ const styles = StyleSheet.create({
     currencyContainer: { gap: 12 },
     currencyField: { gap: 8 },
     currencyLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
-    pickerButton: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-    },
-    pickerButtonText: { fontSize: 16, fontWeight: '500', color: colors.primary, flex: 1 },
     swapButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -197,7 +204,7 @@ const styles = StyleSheet.create({
     resultContainer: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         alignItems: 'center',
@@ -209,26 +216,18 @@ const styles = StyleSheet.create({
     resultCurrency: { fontSize: 16, color: colors.secondary },
     rateInfo: { alignItems: 'center', padding: 16 },
     rateText: { fontSize: 14, color: colors.secondary },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '60%' },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle,
+    copiedBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: colors.accent,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
     },
-    modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
-    modalOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle + '40',
+    copiedText: {
+        color: colors.main,
+        fontSize: 12,
+        fontWeight: '600',
     },
-    modalOptionSelected: { backgroundColor: colors.accent + '15' },
-    modalOptionText: { fontSize: 16, color: colors.primary },
-    modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
 });

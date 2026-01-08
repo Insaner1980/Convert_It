@@ -4,7 +4,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View, Text, Platform } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   ArrowLeftRight,
   Tag,
@@ -32,7 +32,7 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.main,
+          backgroundColor: colors.card, // #0f0f0f per UI_SPEC.md
           borderTopColor: colors.subtle,
           borderTopWidth: 0.5,
           paddingTop: 12,
@@ -46,7 +46,7 @@ function TabNavigator() {
           fontWeight: '500',
           marginTop: 4,
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color }) => {
           const iconProps = { color, size: 24, strokeWidth: 2 };
 
           switch (route.name) {
@@ -75,9 +75,15 @@ function TabNavigator() {
   );
 }
 
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
+
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <NavigationContainer
           theme={{
@@ -85,16 +91,16 @@ export default function App() {
             colors: {
               primary: colors.accent,
               background: colors.main,
-              card: colors.main,
+              card: colors.card, // #0f0f0f for tab bar
               text: colors.primary,
               border: colors.subtle,
               notification: colors.accent,
             },
             fonts: {
-              regular: { fontFamily: 'System', fontWeight: '400' },
-              medium: { fontFamily: 'System', fontWeight: '500' },
-              bold: { fontFamily: 'System', fontWeight: '700' },
-              heavy: { fontFamily: 'System', fontWeight: '900' },
+              regular: { fontFamily: 'monospace', fontWeight: '400' },
+              medium: { fontFamily: 'monospace', fontWeight: '500' },
+              bold: { fontFamily: 'monospace', fontWeight: '700' },
+              heavy: { fontFamily: 'monospace', fontWeight: '900' },
             },
           }}
         >

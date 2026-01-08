@@ -3,17 +3,26 @@ import {
     View,
     Text,
     TextInput,
-    TouchableOpacity,
     ScrollView,
     StyleSheet,
+    TouchableOpacity,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    interpolateColor,
+} from 'react-native-reanimated';
 import { ArrowLeftRight } from 'lucide-react-native';
 
 import { LENGTH_UNITS, WEIGHT_UNITS, TEMPERATURE_UNITS } from '../constants';
 import { colors } from '../theme/colors';
+import { fontFamily } from '../theme/typography';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
+import { AnimatedPressable } from '../components/AnimatedPressable';
 
 enum Category {
     LENGTH = 'Length',
@@ -31,6 +40,13 @@ export const ConverterScreen: React.FC = () => {
     // Modal states
     const [fromModalVisible, setFromModalVisible] = useState(false);
     const [toModalVisible, setToModalVisible] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async (text: string) => {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
 
     const units = useMemo(() => {
         switch (category) {
@@ -50,7 +66,7 @@ export const ConverterScreen: React.FC = () => {
             setFromUnit(units[0].id);
             setToUnit(units[1].id);
         }
-    }, [units, category]);
+    }, [units, category, fromUnit, toUnit]);
 
     const result = useMemo(() => {
         const val = parseFloat(value);
@@ -94,22 +110,43 @@ export const ConverterScreen: React.FC = () => {
         setToUnit(fromUnit);
     };
 
-    const CategoryButton = ({ cat, isActive }: { cat: Category; isActive: boolean }) => (
-        <TouchableOpacity
-            onPress={() => setCategory(cat)}
-            style={[
-                styles.categoryButton,
-                isActive && styles.categoryButtonActive
-            ]}
-        >
-            <Text style={[
-                styles.categoryButtonText,
-                isActive && styles.categoryButtonTextActive
-            ]}>
-                {cat}
-            </Text>
-        </TouchableOpacity>
-    );
+    // Animated category button with color transition
+    const CategoryButton = ({ cat, isActive }: { cat: Category; isActive: boolean }) => {
+        const progress = useSharedValue(isActive ? 1 : 0);
+
+        useEffect(() => {
+            progress.value = withTiming(isActive ? 1 : 0, { duration: 200 });
+        }, [isActive, progress]);
+
+        const animatedBgStyle = useAnimatedStyle(() => ({
+            backgroundColor: interpolateColor(
+                progress.value,
+                [0, 1],
+                ['transparent', colors.accent]
+            ),
+        }));
+
+        const animatedTextStyle = useAnimatedStyle(() => ({
+            color: interpolateColor(
+                progress.value,
+                [0, 1],
+                [colors.secondary, colors.main]
+            ),
+        }));
+
+        return (
+            <AnimatedPressable
+                onPress={() => setCategory(cat)}
+                style={[styles.categoryButton]}
+            >
+                <Animated.View style={[styles.categoryButtonInner, animatedBgStyle]}>
+                    <Animated.Text style={[styles.categoryButtonText, animatedTextStyle]}>
+                        {cat}
+                    </Animated.Text>
+                </Animated.View>
+            </AnimatedPressable>
+        );
+    };
 
     const unitOptions = units.map(u => ({ label: u.label, value: u.id }));
     const fromUnitLabel = units.find(u => u.id === fromUnit)?.label || 'Select';
@@ -172,13 +209,13 @@ export const ConverterScreen: React.FC = () => {
                     </View>
 
                     {/* Swap Button */}
-                    <TouchableOpacity
+                    <AnimatedPressable
                         style={styles.swapButton}
                         onPress={handleSwap}
                     >
                         <ArrowLeftRight color={colors.accent} size={20} />
                         <Text style={styles.swapButtonText}>Swap</Text>
-                    </TouchableOpacity>
+                    </AnimatedPressable>
 
                     {/* To Unit */}
                     <View style={styles.unitRow}>
@@ -191,10 +228,19 @@ export const ConverterScreen: React.FC = () => {
                 </View>
 
                 {/* Result Display */}
-                <View style={styles.resultContainer}>
+                <TouchableOpacity
+                    style={styles.resultContainer}
+                    onPress={() => copyToClipboard(result)}
+                    activeOpacity={0.7}
+                >
+                    {copied && (
+                        <View style={styles.copiedBadge}>
+                            <Text style={styles.copiedText}>Copied!</Text>
+                        </View>
+                    )}
                     <Text style={styles.resultValue}>{result}</Text>
                     <Text style={styles.resultUnit}>{toUnitLabel}</Text>
-                </View>
+                </TouchableOpacity>
             </ScrollView>
 
             {/* Modals */}
@@ -227,7 +273,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingVertical: 16,
     },
     headerLeft: {
@@ -242,6 +288,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.primary,
     },
     headerTitle: {
+        fontFamily,
         fontSize: 28,
         fontWeight: '600',
         color: colors.primary,
@@ -266,8 +313,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 24,
-        gap: 24,
+        paddingHorizontal: 16,
+        gap: 16,
     },
     categoryContainer: {
         flexDirection: 'row',
@@ -279,25 +326,21 @@ const styles = StyleSheet.create({
     },
     categoryButton: {
         flex: 1,
+    },
+    categoryButtonInner: {
         paddingVertical: 14,
         alignItems: 'center',
         borderRadius: 12,
-    },
-    categoryButtonActive: {
-        backgroundColor: colors.accent,
     },
     categoryButtonText: {
         fontSize: 13,
         fontWeight: '500',
         color: colors.secondary,
     },
-    categoryButtonTextActive: {
-        color: colors.main,
-    },
     inputSection: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         gap: 8,
@@ -325,23 +368,6 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         marginLeft: 4,
     },
-    pickerButton: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-    },
-    pickerButtonText: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: colors.primary,
-        flex: 1,
-    },
     swapButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -363,7 +389,7 @@ const styles = StyleSheet.create({
     resultContainer: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         alignItems: 'center',
@@ -379,48 +405,18 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: colors.secondary,
     },
-    // Modal Styles
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        justifyContent: 'flex-end',
+    copiedBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: colors.accent,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
     },
-    modalContent: {
-        backgroundColor: colors.card,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        maxHeight: '60%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.primary,
-    },
-    modalOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle + '40',
-    },
-    modalOptionSelected: {
-        backgroundColor: colors.accent + '15',
-    },
-    modalOptionText: {
-        fontSize: 16,
-        color: colors.primary,
-    },
-    modalOptionTextSelected: {
-        color: colors.accent,
+    copiedText: {
+        color: colors.main,
+        fontSize: 12,
         fontWeight: '600',
     },
 });

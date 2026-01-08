@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,8 @@ import {
     Modal,
     FlatList,
     Pressable,
+    KeyboardAvoidingView,
+    Platform,
 } from 'react-native';
 // Slider removed - using custom gesture-based slider
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -25,7 +27,10 @@ import {
     RotateCcw,
     MapPin,
     Plus,
-    Search // Added Search icon
+    Search, // Added Search icon
+    Type,
+    Hash,
+    Code,
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Location from 'expo-location';
@@ -33,9 +38,18 @@ import * as Location from 'expo-location';
 import { WORLD_CITIES, DATA_UNITS } from '../constants';
 import { WorldCity } from '../types';
 import { colors } from '../theme/colors';
+import { fontFamily } from '../theme/typography';
 import { PickerButton } from '../components/PickerButton';
+import {
+    TextCaseConverter,
+    PercentageCalculator,
+    NumberBaseConverter,
+    UnixTimestampConverter,
+    FractionDecimalConverter,
+    DurationCalculator,
+} from '../components/tools';
 
-type ToolTab = 'colors' | 'time' | 'data';
+type ToolTab = 'colors' | 'time' | 'data' | 'text' | 'numbers' | 'dev';
 
 // Custom Searchable Picker Modal with Online Search AND GPS
 const PickerModal: React.FC<{
@@ -53,7 +67,7 @@ const PickerModal: React.FC<{
     const [isSearching, setIsSearching] = useState(false);
 
     // Debounce search timer
-    const [timer, setTimer] = useState<NodeJS.Timeout | null>(null);
+    const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     // Reset state when modal opens
     useEffect(() => {
@@ -86,7 +100,14 @@ const PickerModal: React.FC<{
                 const data = await response.json();
 
                 if (data.results) {
-                    const mappedCities: WorldCity[] = data.results.map((item: any) => ({
+                    interface GeoResult {
+                        id: number;
+                        name: string;
+                        country?: string;
+                        admin1?: string;
+                        timezone?: string;
+                    }
+                    const mappedCities: WorldCity[] = data.results.map((item: GeoResult) => ({
                         id: `geo_${item.id}`,
                         name: item.name,
                         region: item.country || item.admin1 || 'Unknown',
@@ -121,7 +142,7 @@ const PickerModal: React.FC<{
                     </View>
 
                     <View style={styles.searchContainer}>
-                        <Search size={20} color={colors.secondary} style={{ marginRight: 8 }} />
+                        <Search size={20} color={colors.secondary} style={styles.searchIcon} />
                         <TextInput
                             style={styles.searchInput}
                             placeholder={isCitySearch ? "Type city (e.g. Oulu)..." : "Search..."}
@@ -146,8 +167,8 @@ const PickerModal: React.FC<{
                     )}
 
                     {isSearching && (
-                        <View style={{ padding: 20, alignItems: 'center' }}>
-                            <Text style={{ color: colors.secondary }}>Searching...</Text>
+                        <View style={styles.loadingContainer}>
+                            <Text style={styles.loadingText}>Searching...</Text>
                         </View>
                     )}
 
@@ -348,36 +369,83 @@ export const ToolsScreen: React.FC = () => {
                 <Text style={styles.headerTitle}>Tools</Text>
             </View>
 
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={[
-                    styles.scrollContent,
-                    { paddingBottom: 120 + insets.bottom }
-                ]}
-                showsVerticalScrollIndicator={false}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                style={styles.flexOne}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
             >
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={[
+                        styles.scrollContent,
+                        /* eslint-disable-next-line react-native/no-inline-styles */
+                        { paddingBottom: Platform.OS === 'android' ? 450 : 120 + insets.bottom }
+                    ]}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
                 <View style={styles.tabContainer}>
                     <TabButton
                         tab="colors"
-                        icon={<Palette size={16} color={activeTab === 'colors' ? colors.main : colors.secondary} />}
+                        icon={<Palette size={14} color={activeTab === 'colors' ? colors.main : colors.secondary} />}
                         label="Colors"
                     />
                     <TabButton
+                        tab="text"
+                        icon={<Type size={14} color={activeTab === 'text' ? colors.main : colors.secondary} />}
+                        label="Text"
+                    />
+                    <TabButton
+                        tab="numbers"
+                        icon={<Hash size={14} color={activeTab === 'numbers' ? colors.main : colors.secondary} />}
+                        label="Numbers"
+                    />
+                </View>
+
+                <View style={styles.tabContainer}>
+                    <TabButton
                         tab="data"
-                        icon={<HardDrive size={16} color={activeTab === 'data' ? colors.main : colors.secondary} />}
+                        icon={<HardDrive size={14} color={activeTab === 'data' ? colors.main : colors.secondary} />}
                         label="Data"
                     />
                     <TabButton
                         tab="time"
-                        icon={<Globe size={16} color={activeTab === 'time' ? colors.main : colors.secondary} />}
-                        label="World Time"
+                        icon={<Globe size={14} color={activeTab === 'time' ? colors.main : colors.secondary} />}
+                        label="Time"
+                    />
+                    <TabButton
+                        tab="dev"
+                        icon={<Code size={14} color={activeTab === 'dev' ? colors.main : colors.secondary} />}
+                        label="Dev"
                     />
                 </View>
 
                 {activeTab === 'colors' && <ColorConverter />}
+                {activeTab === 'text' && <TextCaseConverter />}
+                {activeTab === 'numbers' && (
+                    <View style={styles.content}>
+                        <PercentageCalculator />
+                        <View style={styles.sectionDivider} />
+                        <FractionDecimalConverter />
+                    </View>
+                )}
                 {activeTab === 'data' && <DataConverter />}
-                {activeTab === 'time' && <TimeZones />}
+                {activeTab === 'time' && (
+                    <View style={styles.content}>
+                        <TimeZones />
+                        <View style={styles.sectionDivider} />
+                        <DurationCalculator />
+                    </View>
+                )}
+                {activeTab === 'dev' && (
+                    <View style={styles.content}>
+                        <NumberBaseConverter />
+                        <View style={styles.sectionDivider} />
+                        <UnixTimestampConverter />
+                    </View>
+                )}
             </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 };
@@ -397,7 +465,8 @@ const ColorConverter: React.FC = () => {
     const rgbToHsl = (r: number, g: number, b: number) => {
         r /= 255; g /= 255; b /= 255;
         const max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h = 0, s = 0, l = (max + min) / 2;
+        let h = 0, s = 0;
+        const l = (max + min) / 2;
         if (max !== min) {
             const d = max - min;
             s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -504,6 +573,7 @@ const SliderRow = ({ label, value, onChange, color }: { label: string; value: nu
                         <View
                             style={[
                                 styles.customSliderThumb,
+                                /* eslint-disable-next-line react-native/no-inline-styles */
                                 {
                                     backgroundColor: color,
                                     left: trackWidth > 0 ? Math.max(0, (value / 255) * trackWidth - 10) : 0,
@@ -534,6 +604,12 @@ const DataConverter: React.FC = () => {
     const [toUnit, setToUnit] = useState('mb');
     const [fromModalVisible, setFromModalVisible] = useState(false);
     const [toModalVisible, setToModalVisible] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const copyToClipboard = async (text: string) => {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
     const result = useMemo(() => {
         const val = parseFloat(value);
         if (isNaN(val)) return '---';
@@ -568,10 +644,11 @@ const DataConverter: React.FC = () => {
                     <PickerButton value={DATA_UNITS.find(u => u.id === toUnit)?.label || ''} onPress={() => setToModalVisible(true)} />
                 </View>
             </View>
-            <View style={styles.resultContainer}>
+            <TouchableOpacity style={styles.resultContainer} onPress={() => copyToClipboard(result)} activeOpacity={0.7}>
+                {copied && <View style={styles.copiedBadge}><Text style={styles.copiedText}>Copied!</Text></View>}
                 <Text style={styles.resultValue}>{result}</Text>
                 <Text style={styles.resultUnit}>{DATA_UNITS.find(u => u.id === toUnit)?.label}</Text>
-            </View>
+            </TouchableOpacity>
             <PickerModal visible={fromModalVisible} onClose={() => setFromModalVisible(false)} title="Select From Unit" options={unitOptions} selectedValue={fromUnit} onSelect={setFromUnit} />
             <PickerModal visible={toModalVisible} onClose={() => setToModalVisible(false)} title="Select To Unit" options={unitOptions} selectedValue={toUnit} onSelect={setToUnit} />
         </View>
@@ -591,9 +668,6 @@ const TimeZones: React.FC = () => {
     const [timePickerVisible, setTimePickerVisible] = useState(false);
     const [baseCitySelectorVisible, setBaseCitySelectorVisible] = useState(false);
 
-    // GPS State
-    const [isLocating, setIsLocating] = useState(false);
-
     // Update "real time" every second
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -602,22 +676,21 @@ const TimeZones: React.FC = () => {
 
     // Detect GPS Location
     const detectUserLocation = async () => {
-        setIsLocating(true);
         try {
-            let { status } = await Location.requestForegroundPermissionsAsync();
+            const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 console.warn('Permission to access location was denied');
                 return;
             }
 
-            let location = await Location.getCurrentPositionAsync({});
+            const location = await Location.getCurrentPositionAsync({});
 
             // We use Open-Meteo Reverse Geocoding via their Search API with lat/lon? No, search uses text.
             // For coordinates, we can just guess or use a proper reverse geocoder.
             // Open-Meteo has no direct reverse geocoding endpoint in free tier as simply as search.
             // BUT, 'expo-location' has reverseGeocodeAsync!
 
-            let address = await Location.reverseGeocodeAsync({
+            const address = await Location.reverseGeocodeAsync({
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude
             });
@@ -641,8 +714,6 @@ const TimeZones: React.FC = () => {
             }
         } catch (e) {
             console.error("Location Error", e);
-        } finally {
-            setIsLocating(false);
         }
     };
 
@@ -673,12 +744,12 @@ const TimeZones: React.FC = () => {
             // Test if timezone is valid
             new Intl.DateTimeFormat('en-US', { timeZone: tz }).format(new Date());
             return tz;
-        } catch (e) {
+        } catch {
             return 'UTC';
         }
     };
 
-    const getTimeInZone = (date: Date, timezone: string) => {
+    const getTimeInZone = useCallback((date: Date, timezone: string) => {
         try {
             const tz = validTimeZone(timezone);
             const formatter = new Intl.DateTimeFormat('en-US', {
@@ -717,16 +788,16 @@ const TimeZones: React.FC = () => {
 
             return date; // Fail safe
         } catch (e) {
-            console.log("Date error", e);
+            console.error("Date error", e);
             return date;
         }
-    }
+    }, []);
 
     // Calculate the "Visual Time" to show in the big clock
     const displayTime = useMemo(() => {
         const tz = baseCity ? baseCity.timezone : Intl.DateTimeFormat().resolvedOptions().timeZone;
         return getTimeInZone(referenceTime, tz);
-    }, [referenceTime, baseCity]);
+    }, [referenceTime, baseCity, getTimeInZone]);
 
     const handleTimeChange = (h: number, m: number) => {
         // Determine target time in the Base City's timezone
@@ -834,7 +905,7 @@ const TimeZones: React.FC = () => {
             // Secondary: inside group, sort by Name
             return a.name.localeCompare(b.name);
         });
-    }, [cities, sortMethod, referenceTime]);
+    }, [cities, sortMethod]);
 
     // Cycle through sort methods
     const toggleSort = () => {
@@ -897,7 +968,7 @@ const TimeZones: React.FC = () => {
             {/* Comparison List */}
             <View style={styles.listHeader}>
                 <Text style={styles.sectionTitle}>COMPARED TO</Text>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={styles.listActionRow}>
                     <TouchableOpacity onPress={toggleSort} style={styles.sortButton}>
                         <Text style={styles.sortButtonText}>{getSortLabel()}</Text>
                     </TouchableOpacity>
@@ -979,16 +1050,18 @@ const TimeZones: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.main },
-    header: { paddingHorizontal: 24, paddingVertical: 16 },
-    headerTitle: { fontSize: 28, fontWeight: '600', color: colors.primary },
+    flexOne: { flex: 1 },
+    header: { paddingHorizontal: 16, paddingVertical: 16 },
+    headerTitle: { fontFamily, fontSize: 28, fontWeight: '600', color: colors.primary },
     scrollView: { flex: 1 },
-    scrollContent: { paddingHorizontal: 24, gap: 20 },
+    scrollContent: { paddingHorizontal: 16, gap: 16 },
     tabContainer: { flexDirection: 'row', backgroundColor: colors.input, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: colors.subtle },
     tabButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
     tabButtonActive: { backgroundColor: colors.accent },
     tabButtonText: { fontSize: 12, fontWeight: '500', color: colors.secondary },
     tabButtonTextActive: { color: colors.main },
     content: { gap: 16 },
+    sectionDivider: { height: 1, backgroundColor: colors.subtle, marginVertical: 8 },
 
     // Reference Card Styles
     referenceCard: {
@@ -1013,6 +1086,7 @@ const styles = StyleSheet.create({
 
     // List Styles
     listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+    listActionRow: { flexDirection: 'row', gap: 12 },
     sectionTitle: { fontSize: 12, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
     sortButton: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.subtle },
     sortButtonText: { fontSize: 11, fontWeight: '600', color: colors.secondary },
@@ -1030,43 +1104,37 @@ const styles = StyleSheet.create({
     offsetBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
     offsetBadgeNeutral: { backgroundColor: colors.subtle },
     offsetBadgePlus: { backgroundColor: colors.accent },
-    offsetBadgeMinus: { backgroundColor: colors.accent }, // White for minus
+    offsetBadgeMinus: { backgroundColor: colors.accent },
     offsetText: { fontSize: 12, fontWeight: '700', color: colors.secondary },
 
     // Style fixes from previous steps
-    inputSection: { backgroundColor: colors.input, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.subtle, gap: 8 },
+    inputSection: { backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 8 },
     inputLabel: { fontSize: 14, fontWeight: '500', color: colors.secondary },
     inputField: { fontSize: 48, fontWeight: '300', color: colors.primary },
     unitsContainer: { gap: 12 },
     unitField: { gap: 8 },
     unitLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
-    pickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.input, borderRadius: 16, borderWidth: 1, borderColor: colors.subtle, paddingHorizontal: 16, paddingVertical: 18 },
-    pickerButtonText: { fontSize: 16, fontWeight: '500', color: colors.primary, flex: 1 },
     swapButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.subtle, alignSelf: 'center' },
     swapButtonText: { fontSize: 14, fontWeight: '600', color: colors.accent },
-    resultContainer: { backgroundColor: colors.input, borderRadius: 16, padding: 24, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 8 },
+    resultContainer: { backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 8 },
     resultValue: { fontSize: 40, fontWeight: '600', color: colors.primary },
     resultUnit: { fontSize: 16, color: colors.secondary },
 
     // Other existing styles
     colorPreview: { height: 160, borderRadius: 24, borderWidth: 1, borderColor: colors.subtle, justifyContent: 'center', alignItems: 'center' },
-    copiedBadge: { backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-    copiedText: { color: colors.primary, fontWeight: '500' },
+    copiedBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, zIndex: 1 },
+    copiedText: { color: colors.main, fontSize: 12, fontWeight: '600' },
     colorValuesRow: { flexDirection: 'row', gap: 16 },
     colorValueCard: { flex: 1, backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 4 },
     colorValueLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
     colorValueText: { fontSize: 20, fontWeight: '600', color: colors.primary },
     colorValueTextSmall: { fontSize: 12, fontWeight: '500', color: colors.primary },
-    slidersCard: { backgroundColor: colors.input, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.subtle, gap: 24 },
+    slidersCard: { backgroundColor: colors.input, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 24 },
     sliderRow: { gap: 8 },
-    sliderHeader: { flexDirection: 'row', justifyContent: 'space-between' },
     sliderLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
-    sliderValue: { fontSize: 13, fontWeight: '600', color: colors.primary },
     sliderContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    sliderTrack: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
-    sliderFill: { height: '100%', borderRadius: 4 },
     sliderInput: { width: 50, backgroundColor: colors.main, borderRadius: 8, padding: 8, color: colors.primary, textAlign: 'center', fontSize: 14 },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+    modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
     modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '60%' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.subtle },
     modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
@@ -1077,7 +1145,10 @@ const styles = StyleSheet.create({
 
     // Search styles
     searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.input, margin: 20, marginBottom: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.subtle },
+    searchIcon: { marginRight: 8 },
     searchInput: { flex: 1, paddingVertical: 12, color: colors.primary, fontSize: 16 },
+    loadingContainer: { padding: 20, alignItems: 'center' as const },
+    loadingText: { color: colors.secondary },
     gpsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accent, marginHorizontal: 20, marginBottom: 20, padding: 12, borderRadius: 12 },
     gpsButtonText: { color: colors.main, fontWeight: '600', fontSize: 16 },
     emptySearch: { padding: 40, alignItems: 'center' },
@@ -1086,7 +1157,7 @@ const styles = StyleSheet.create({
     // Time Picker Modal Styles
     timeModalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -1136,17 +1207,10 @@ const styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 10,
-        shadowColor: '#000',
+        shadowColor: colors.main,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 4,
-    },
-    customSliderTouchLayer: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
     },
 });

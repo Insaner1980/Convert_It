@@ -9,8 +9,9 @@ export const colors = {
     subtle: '#262626',    // Subtle borders
     primary: '#ffffff',   // Bright white text
     secondary: '#6b6b6b', // Mid-gray secondary text
-    accent: '#ffffff',    // White accent (active states, buttons)
-    accentHover: '#e5e5e5', // Slightly muted white for hover
+    accent: '#FF0000',    // Red accent (active states, buttons)
+    accentHover: '#cc0000', // Darker red for hover
+    overlay: 'rgba(0,0,0,0.7)', // Modal overlay background
 };
 
 export type Colors = typeof colors;

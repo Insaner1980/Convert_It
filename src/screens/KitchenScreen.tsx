@@ -8,18 +8,24 @@ import {
     StyleSheet,
     Modal,
     FlatList,
-    Pressable,
     ActivityIndicator,
     Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Flame, Scale, Sparkles, X, Search, Plus, Minus } from 'lucide-react-native';
 
 import { KITCHEN_UNITS, INGREDIENTS } from '../constants';
 import { KitchenIngredient } from '../types';
 import { colors } from '../theme/colors';
+import { fontFamily } from '../theme/typography';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
+import {
+    YeastConverter,
+    ButterConverter,
+    ServingSizeAdjuster,
+} from '../components/kitchen';
 
 // USDA API Key - Get yours free at: https://fdc.nal.usda.gov/api-key-signup.html
 const USDA_API_KEY = 'sB18vYGMnhcTSZhVkJRgM4NhGduy9jgAs9luiKbE'; // Replace with your API key
@@ -63,6 +69,13 @@ export const KitchenScreen: React.FC = () => {
     const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async (text: string) => {
+        await Clipboard.setStringAsync(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
 
     // All ingredients (built-in + custom)
     const allIngredients = useMemo(() => {
@@ -106,7 +119,7 @@ export const KitchenScreen: React.FC = () => {
             maximumFractionDigits: 2,
             minimumFractionDigits: 0,
         });
-    }, [value, ingredientId, fromUnitId, toUnitId, ingredient]);
+    }, [value, fromUnitId, toUnitId, ingredient]);
 
     // USDA API Search
     const searchUSDA = useCallback(async () => {
@@ -274,12 +287,21 @@ export const KitchenScreen: React.FC = () => {
                 </View>
             </View>
 
-            <View style={styles.resultContainer}>
+            <TouchableOpacity
+                style={styles.resultContainer}
+                onPress={() => copyToClipboard(result)}
+                activeOpacity={0.7}
+            >
+                {copied && (
+                    <View style={styles.copiedBadge}>
+                        <Text style={styles.copiedText}>Copied!</Text>
+                    </View>
+                )}
                 <Text style={styles.resultValue}>{result}</Text>
                 <Text style={styles.resultUnit}>
                     {KITCHEN_UNITS.find(u => u.id === toUnitId)?.label}
                 </Text>
-            </View>
+            </TouchableOpacity>
         </View>
     );
 
@@ -290,7 +312,7 @@ export const KitchenScreen: React.FC = () => {
         const faren = Math.round((conv * 9 / 5) + 32);
 
         // Define the data for each mode
-        // COLORS: Active = colors.accent (Yellow), Inactive = colors.secondary (Gray)
+        // COLORS: Active = colors.accent (Red), Inactive = colors.secondary (Gray)
         const modes = {
             conventional: { label: 'Conventional Oven', value: `${conv}°C`, hint: 'Standard setting', id: 'conventional' },
             fan: { label: 'Fan / Convection', value: `${fan}°C`, hint: 'Air circulation active', id: 'fan' },
@@ -336,7 +358,7 @@ export const KitchenScreen: React.FC = () => {
 
         return (
             <View style={styles.content}>
-                <View style={[styles.section, { gap: 24 }]}>
+                <View style={[styles.section, styles.sectionLargeGap]}>
                     <Text style={styles.sectionLabel}>ELECTRIC OVEN CONVERTER</Text>
 
                     {/* Main Control */}
@@ -346,7 +368,7 @@ export const KitchenScreen: React.FC = () => {
                             <TouchableOpacity onPress={() => adjustTemp(-1)} style={styles.tempButton}>
                                 <Minus size={24} color={colors.accent} />
                             </TouchableOpacity>
-                            <View style={{ alignItems: 'center' }}>
+                            <View style={styles.ovenValueContainer}>
                                 <Text style={[styles.ovenMainValue, { color: colors.primary }]}>{current.value}</Text>
                             </View>
                             <TouchableOpacity onPress={() => adjustTemp(1)} style={[styles.tempButton, { backgroundColor: colors.accent + '20', borderColor: colors.subtle }]}>
@@ -369,10 +391,19 @@ export const KitchenScreen: React.FC = () => {
 
     const renderSpecial = () => (
         <View style={styles.content}>
+            {/* Serving Size Adjuster */}
+            <ServingSizeAdjuster />
+
+            {/* Yeast Converter */}
+            <YeastConverter />
+
+            {/* Butter Converter */}
+            <ButterConverter />
+
+            {/* Quick Reference Card */}
             <View style={styles.specialCard}>
-                <Text style={styles.specialTitle}>Quick Conversions</Text>
+                <Text style={styles.specialTitle}>Quick Reference</Text>
                 {[
-                    { label: '1 Stick Butter', value: '= 113g = ½ cup = 8 tbsp' },
                     { label: '1 US Cup', value: '= 236.59 ml = 16 tbsp' },
                     { label: '1 UK Cup', value: '= 284 ml' },
                     { label: '1 Tablespoon', value: '= 15 ml = 3 tsp' },
@@ -552,10 +583,10 @@ export const KitchenScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.main },
-    header: { paddingHorizontal: 24, paddingVertical: 16 },
-    headerTitle: { fontSize: 28, fontWeight: '600', color: colors.primary },
+    header: { paddingHorizontal: 16, paddingVertical: 16 },
+    headerTitle: { fontFamily, fontSize: 28, fontWeight: '600', color: colors.primary },
     scrollView: { flex: 1 },
-    scrollContent: { paddingHorizontal: 24, gap: 20 },
+    scrollContent: { paddingHorizontal: 16, gap: 16 },
     tabContainer: {
         flexDirection: 'row',
         backgroundColor: colors.input,
@@ -578,6 +609,8 @@ const styles = StyleSheet.create({
     tabButtonTextActive: { color: colors.main },
     content: { gap: 20 },
     section: { gap: 8 },
+    sectionLargeGap: { gap: 24 },
+    ovenValueContainer: { alignItems: 'center' },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -591,22 +624,10 @@ const styles = StyleSheet.create({
     },
     addButtonText: { fontSize: 12, fontWeight: '600', color: colors.accent },
     densityInfo: { fontSize: 12, color: colors.secondary, marginLeft: 4 },
-    pickerButton: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        paddingHorizontal: 16,
-        paddingVertical: 18,
-    },
-    pickerButtonText: { fontSize: 14, fontWeight: '500', color: colors.primary, flex: 1 },
     inputSection: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         gap: 8,
@@ -619,7 +640,7 @@ const styles = StyleSheet.create({
     resultContainer: {
         backgroundColor: colors.input,
         borderRadius: 16,
-        padding: 24,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.subtle,
         alignItems: 'center',
@@ -627,23 +648,6 @@ const styles = StyleSheet.create({
     },
     resultValue: { fontSize: 48, fontWeight: '600', color: colors.primary },
     resultUnit: { fontSize: 18, color: colors.secondary },
-    ovenTable: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        overflow: 'hidden',
-    },
-    ovenHeader: {
-        flexDirection: 'row',
-        backgroundColor: colors.subtle + '33',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle,
-    },
-    ovenHeaderCell: { flex: 1, padding: 16, fontSize: 12, fontWeight: '700', color: colors.secondary, textAlign: 'center' },
-    ovenRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.subtle + '33' },
-    ovenCell: { flex: 1, padding: 16, fontSize: 16, color: colors.secondary, textAlign: 'center' },
-    ovenCellHighlight: { color: colors.accent, fontWeight: '600' },
     specialCard: {
         backgroundColor: colors.input,
         borderRadius: 16,
@@ -656,32 +660,11 @@ const styles = StyleSheet.create({
     specialItem: { gap: 4 },
     specialLabel: { fontSize: 14, fontWeight: '600', color: colors.primary },
     specialValue: { fontSize: 14, color: colors.secondary },
-    // Modal styles
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%' },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle,
-    },
-    modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
-    modalOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 18,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle + '40',
-    },
-    modalOptionSelected: { backgroundColor: colors.accent + '15' },
-    modalOptionText: { fontSize: 16, color: colors.primary },
-    modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
     // Search modal styles
-    searchModalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)' },
+    searchModalContainer: { flex: 1, backgroundColor: colors.overlay },
     searchModalContent: { flex: 1, backgroundColor: colors.main, marginTop: 60, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.subtle },
+    modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -722,7 +705,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.8)',
+        backgroundColor: colors.overlay,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 10,
@@ -742,4 +725,18 @@ const styles = StyleSheet.create({
     ovenResultLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
     ovenResultValue: { fontSize: 28, fontWeight: '600', color: colors.primary, marginTop: 4 },
     ovenResultHint: { fontSize: 11, color: colors.secondary, textAlign: 'center' },
+    copiedBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: colors.accent,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    copiedText: {
+        color: colors.main,
+        fontSize: 12,
+        fontWeight: '600',
+    },
 });

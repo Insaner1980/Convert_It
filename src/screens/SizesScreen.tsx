@@ -10,7 +10,7 @@ import {
     Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Shirt, Footprints, Baby, Ruler, Globe, ChevronDown, Check, X } from 'lucide-react-native';
+import { Shirt, Footprints, Baby, Ruler, Globe, Check, X } from 'lucide-react-native';
 
 import {
     SHOE_SIZES_MEN, SHOE_SIZES_WOMEN, SHOE_SIZES_KIDS,
@@ -20,6 +20,7 @@ import {
 } from '../constants';
 import { Gender, SizeCategory, SizeRow } from '../types';
 import { colors } from '../theme/colors';
+import { fontFamily } from '../theme/typography';
 import { PickerButton } from '../components/PickerButton';
 
 const REGIONS = [
@@ -30,14 +31,16 @@ const REGIONS = [
     { id: 'au', label: 'Australia / NZ' },
 ];
 
-// Local Picker Modal with 'any' value type (specific to SizesScreen for number/string mix)
+// Local Picker Modal with mixed value types (specific to SizesScreen for number/string mix)
+type SizeValue = string | number;
+
 interface PickerModalProps {
     visible: boolean;
     onClose: () => void;
     title: string;
-    options: { label: string; value: any }[];
-    selectedValue: any;
-    onSelect: (value: any) => void;
+    options: { label: string; value: SizeValue }[];
+    selectedValue: SizeValue;
+    onSelect: (value: SizeValue) => void;
 }
 
 const PickerModal: React.FC<PickerModalProps> = ({
@@ -267,7 +270,7 @@ export const SizesScreen: React.FC = () => {
                     title="Select Input Region"
                     options={REGIONS.map(r => ({ label: r.label, value: r.id }))}
                     selectedValue={inputRegion}
-                    onSelect={setInputRegion}
+                    onSelect={(v) => setInputRegion(v as string)}
                 />
                 <PickerModal
                     visible={bandModalVisible}
@@ -278,7 +281,7 @@ export const SizesScreen: React.FC = () => {
                         value: b
                     }))}
                     selectedValue={bandEu}
-                    onSelect={setBandEu}
+                    onSelect={(v) => setBandEu(v as number)}
                 />
                 <PickerModal
                     visible={cupModalVisible}
@@ -289,7 +292,7 @@ export const SizesScreen: React.FC = () => {
                         value: c
                     }))}
                     selectedValue={cupEu}
-                    onSelect={setCupEu}
+                    onSelect={(v) => setCupEu(v as string)}
                 />
             </View>
         );
@@ -395,10 +398,11 @@ const styles = StyleSheet.create({
         backgroundColor: colors.main,
     },
     header: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
         paddingVertical: 16,
     },
     headerTitle: {
+        fontFamily,
         fontSize: 28,
         fontWeight: '600',
         color: colors.primary,
@@ -407,8 +411,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollContent: {
-        paddingHorizontal: 24,
-        gap: 20,
+        paddingHorizontal: 16,
+        gap: 16,
     },
     genderContainer: {
         flexDirection: 'row',
@@ -547,23 +551,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         marginLeft: 4,
     },
-    // Custom Picker Button
-    pickerButton: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: colors.main,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle + '80',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-    },
-    pickerButtonText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: colors.primary,
-    },
     // Result Rows - NOW INTERACTIVE
     resultRow: {
         flexDirection: 'row',
@@ -616,7 +603,7 @@ const styles = StyleSheet.create({
     // Modal Styles
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: colors.overlay,
         justifyContent: 'flex-end',
     },
     modalContent: {

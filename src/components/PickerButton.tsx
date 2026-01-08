@@ -1,10 +1,11 @@
 // src/components/PickerButton.tsx
-// Reusable picker button component
+// Reusable picker button component with press animation
 
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { AnimatedPressable } from './AnimatedPressable';
 
 interface PickerButtonProps {
     value: string;
@@ -13,10 +14,10 @@ interface PickerButtonProps {
 }
 
 export const PickerButton: React.FC<PickerButtonProps> = ({ value, onPress }) => (
-    <TouchableOpacity style={styles.pickerButton} onPress={onPress}>
+    <AnimatedPressable style={styles.pickerButton} onPress={onPress}>
         <Text style={styles.pickerButtonText} numberOfLines={1}>{value}</Text>
         <ChevronDown size={18} color={colors.secondary} />
-    </TouchableOpacity>
+    </AnimatedPressable>
 );
 
 const styles = StyleSheet.create({
