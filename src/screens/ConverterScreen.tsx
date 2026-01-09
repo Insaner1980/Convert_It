@@ -6,6 +6,7 @@ import {
     ScrollView,
     StyleSheet,
     TouchableOpacity,
+    Image,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +24,9 @@ import { fontFamily } from '../theme/typography';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
 import { AnimatedPressable } from '../components/AnimatedPressable';
+
+// Logo
+const logo = require('../../assets/adaptive-icon.png');
 
 enum Category {
     LENGTH = 'Length',
@@ -130,7 +134,7 @@ export const ConverterScreen: React.FC = () => {
             color: interpolateColor(
                 progress.value,
                 [0, 1],
-                [colors.secondary, colors.main]
+                [colors.secondary, colors.primary]
             ),
         }));
 
@@ -157,11 +161,8 @@ export const ConverterScreen: React.FC = () => {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
-                    <View style={styles.headerDot} />
-                    <Text style={styles.headerTitle}>CONVERT IT!</Text>
-                </View>
-                <View style={styles.headerAvatar}>
-                    <Text style={styles.headerAvatarText}>CI</Text>
+                    <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
+                    <Text style={styles.headerTitle}>UnitX</Text>
                 </View>
             </View>
 
@@ -279,13 +280,11 @@ const styles = StyleSheet.create({
     headerLeft: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
     },
-    headerDot: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        backgroundColor: colors.primary,
+    headerLogo: {
+        width: 36,
+        height: 36,
     },
     headerTitle: {
         fontFamily,
@@ -293,21 +292,6 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.primary,
         letterSpacing: -0.5,
-    },
-    headerAvatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: colors.input,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerAvatarText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: colors.accent,
     },
     scrollView: {
         flex: 1,

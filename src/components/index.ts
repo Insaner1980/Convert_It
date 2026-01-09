@@ -7,3 +7,5 @@ export { AnimatedPressable } from './AnimatedPressable';
 export { AnimatedTabButton } from './AnimatedTabButton';
 export { AnimatedInput } from './AnimatedInput';
 export { AnimatedResult } from './AnimatedResult';
+export { ConfirmDialog } from './ConfirmDialog';
+export { AnimatedSplash } from './AnimatedSplash';

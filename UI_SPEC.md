@@ -1,6 +1,6 @@
-# Convert It - UI Specification
+# UnitX - UI Specification
 
-**Version:** 3.0
+**Version:** 4.0
 **Date:** 2026-01-09
 **Platform:** React Native (Expo) - Android (Google Pixel 9)
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-**Convert It** is a premium conversion utility app with a dark monochromatic design and red accent color. The app features unit conversion, size charts, kitchen tools, currency exchange, and utility tools.
+**UnitX** is a premium conversion utility app with a dark monochromatic design and red accent color. The app features unit conversion, size charts, kitchen tools, currency exchange, and utility tools.
 
 **Tagline:** "Convert with precision"
 
@@ -32,12 +32,13 @@
 ```
 
 ### Usage Guidelines
-- **Active states:** Red background (`#A30000`) with black text (`#000000`)
+- **Active states:** Red background (`#A30000`) with white text (`#ffffff`)
 - **Inactive states:** Card/input background with gray text
 - **Bottom tab bar:** `#0f0f0f` (card color)
 - **Active tab icon:** `#A30000` (red)
 - **Inactive tab icon:** `#6b6b6b` (gray)
 - **Copied badge:** Red background with black text
+- **Tab/Category buttons:** Text only (no icons)
 
 ---
 
@@ -106,7 +107,9 @@
 
 ## Screen Specifications
 
-### 1. CONVERT (Unit Converter)
+### 1. CONVERT (Unit Converter) - Main Screen
+
+**Header:** Logo + "UnitX" (logo only on this screen)
 
 **Sub-tabs:** Length | Weight | Temperature
 
@@ -176,14 +179,19 @@
 **Full-screen view (no sub-tabs)**
 
 **Features:**
+- ExchangeRate-API integration (156 currencies, real-time rates)
 - Currency symbol display (€, $, £, ¥)
 - Large input with symbol
-- FROM/TO currency pickers
+- FROM/TO currency pickers (long press to remove)
 - Swap button
 - Result with tap-to-copy
+- "MY CURRENCIES" section with favorite currency pills
+- "Add Currency" button with search modal
+- "NEW" badge for recently added currencies (1.5s)
+- Custom ConfirmDialog for removal confirmation
 - Subtitle: "Rates are approximate"
 
-**Currencies:** EUR, USD, GBP, JPY, SEK, NOK, CHF, CAD, AUD, CNY, INR, etc.
+**Default Currencies:** EUR, USD, GBP, JPY, SEK, NOK, CHF, CAD, AUD, CNY
 
 ---
 
@@ -296,7 +304,7 @@ copiedText: {
 }
 // Text
 {
-  color: colors.main,  // #000000
+  color: colors.primary,  // #ffffff (white text on red)
   fontWeight: '600',
 }
 ```
@@ -350,6 +358,48 @@ header: {
 }
 ```
 
+### Confirm Dialog
+Custom styled confirmation dialog (replaces native Alert.alert for destructive actions):
+```typescript
+dialog: {
+  backgroundColor: colors.card,  // #0f0f0f
+  borderRadius: 16,
+  padding: 24,
+  borderWidth: 1,
+  borderColor: colors.subtle,
+}
+cancelButton: {
+  backgroundColor: colors.input,  // #1a1a1a
+  borderRadius: 12,
+}
+confirmButton: {
+  backgroundColor: colors.accent,  // #A30000 (destructive)
+}
+confirmText: {
+  color: colors.main,  // #000000
+}
+```
+
+---
+
+## Splash Screen
+
+### Animated Splash
+Custom animated splash screen with sliding arrows:
+
+**Animation sequence:**
+1. [0-400ms] Top arrow (→) slides in from right
+2. [0-400ms] Bottom arrow (←) slides in from left
+3. [400-700ms] Pause (arrows in center)
+4. [700-1000ms] Fade out to app
+
+**Assets:**
+- `assets/splash-arrow-right.png` - Right arrow
+- `assets/splash-arrow-left.png` - Left arrow
+- `assets/adaptive-icon.png` - Combined logo (used in header)
+
+**Implementation:** `src/components/AnimatedSplash.tsx`
+
 ---
 
 ## Animations
@@ -383,6 +433,7 @@ header: {
   "react-native-gesture-handler": "~2.28.0",
   "expo-location": "~19.0.8",
   "expo-clipboard": "~8.0.8",
+  "expo-splash-screen": "~0.30.8",
   "lucide-react-native": "^0.562.0",
   "@react-navigation/bottom-tabs": "^7.9.0"
 }
@@ -398,40 +449,53 @@ header: {
 ## File Structure
 
 ```
-src/
-├── components/
-│   ├── AnimatedInput.tsx
-│   ├── AnimatedPressable.tsx
-│   ├── AnimatedResult.tsx
-│   ├── AnimatedTabButton.tsx
-│   ├── PickerButton.tsx
-│   ├── PickerModal.tsx
-│   ├── index.ts
-│   ├── kitchen/
-│   │   ├── YeastConverter.tsx
-│   │   ├── ButterConverter.tsx
-│   │   └── ServingSizeAdjuster.tsx
-│   └── tools/
-│       ├── TextCaseConverter.tsx
-│       ├── PercentageCalculator.tsx
-│       ├── NumberBaseConverter.tsx
-│       ├── FractionDecimalConverter.tsx
-│       ├── UnixTimestampConverter.tsx
-│       └── DurationCalculator.tsx
-├── screens/
-│   ├── ConverterScreen.tsx
-│   ├── SizesScreen.tsx
-│   ├── KitchenScreen.tsx
-│   ├── CurrencyScreen.tsx
-│   └── ToolsScreen.tsx
-├── theme/
-│   ├── colors.ts
-│   ├── typography.ts
-│   └── index.ts
-├── constants/
-│   └── index.ts
-└── types/
-    └── index.ts
+UnitX/
+├── assets/
+│   ├── adaptive-icon.png      # App logo (two arrows)
+│   ├── splash-arrow-right.png # Splash animation arrow →
+│   ├── splash-arrow-left.png  # Splash animation arrow ←
+│   ├── icon.png
+│   ├── favicon.png
+│   └── splash-icon.png
+├── src/
+│   ├── components/
+│   │   ├── AnimatedInput.tsx
+│   │   ├── AnimatedPressable.tsx
+│   │   ├── AnimatedResult.tsx
+│   │   ├── AnimatedSplash.tsx    # Animated splash screen
+│   │   ├── AnimatedTabButton.tsx
+│   │   ├── ConfirmDialog.tsx
+│   │   ├── PickerButton.tsx
+│   │   ├── PickerModal.tsx
+│   │   ├── index.ts
+│   │   ├── kitchen/
+│   │   │   ├── YeastConverter.tsx
+│   │   │   ├── ButterConverter.tsx
+│   │   │   └── ServingSizeAdjuster.tsx
+│   │   └── tools/
+│   │       ├── TextCaseConverter.tsx
+│   │       ├── PercentageCalculator.tsx
+│   │       ├── NumberBaseConverter.tsx
+│   │       ├── FractionDecimalConverter.tsx
+│   │       ├── UnixTimestampConverter.tsx
+│   │       └── DurationCalculator.tsx
+│   ├── screens/
+│   │   ├── ConverterScreen.tsx
+│   │   ├── SizesScreen.tsx
+│   │   ├── KitchenScreen.tsx
+│   │   ├── CurrencyScreen.tsx
+│   │   └── ToolsScreen.tsx
+│   ├── theme/
+│   │   ├── colors.ts
+│   │   ├── typography.ts
+│   │   └── index.ts
+│   ├── constants/
+│   │   └── index.ts
+│   └── types/
+│       └── index.ts
+├── App.tsx
+├── UI_SPEC.md
+└── CLAUDE.md
 ```
 
 ---

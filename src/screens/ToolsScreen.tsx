@@ -16,9 +16,6 @@ import {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    Palette,
-    Globe,
-    HardDrive,
     ArrowLeftRight,
     X,
     Check,
@@ -27,10 +24,7 @@ import {
     RotateCcw,
     MapPin,
     Plus,
-    Search, // Added Search icon
-    Type,
-    Hash,
-    Code,
+    Search,
 } from 'lucide-react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Location from 'expo-location';
@@ -48,6 +42,7 @@ import {
     FractionDecimalConverter,
     DurationCalculator,
 } from '../components/tools';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 type ToolTab = 'colors' | 'time' | 'data' | 'text' | 'numbers' | 'dev';
 
@@ -351,12 +346,11 @@ export const ToolsScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<ToolTab>('colors');
 
-    const TabButton = ({ tab, icon, label }: { tab: ToolTab; icon: React.ReactNode; label: string }) => (
+    const TabButton = ({ tab, label }: { tab: ToolTab; label: string }) => (
         <TouchableOpacity
             onPress={() => setActiveTab(tab)}
             style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
         >
-            {icon}
             <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
                 {label}
             </Text>
@@ -385,39 +379,15 @@ export const ToolsScreen: React.FC = () => {
                     keyboardShouldPersistTaps="handled"
                 >
                 <View style={styles.tabContainer}>
-                    <TabButton
-                        tab="colors"
-                        icon={<Palette size={14} color={activeTab === 'colors' ? colors.main : colors.secondary} />}
-                        label="Colors"
-                    />
-                    <TabButton
-                        tab="text"
-                        icon={<Type size={14} color={activeTab === 'text' ? colors.main : colors.secondary} />}
-                        label="Text"
-                    />
-                    <TabButton
-                        tab="numbers"
-                        icon={<Hash size={14} color={activeTab === 'numbers' ? colors.main : colors.secondary} />}
-                        label="Numbers"
-                    />
+                    <TabButton tab="colors" label="Colors" />
+                    <TabButton tab="text" label="Text" />
+                    <TabButton tab="numbers" label="Numbers" />
                 </View>
 
                 <View style={styles.tabContainer}>
-                    <TabButton
-                        tab="data"
-                        icon={<HardDrive size={14} color={activeTab === 'data' ? colors.main : colors.secondary} />}
-                        label="Data"
-                    />
-                    <TabButton
-                        tab="time"
-                        icon={<Globe size={14} color={activeTab === 'time' ? colors.main : colors.secondary} />}
-                        label="Time"
-                    />
-                    <TabButton
-                        tab="dev"
-                        icon={<Code size={14} color={activeTab === 'dev' ? colors.main : colors.secondary} />}
-                        label="Dev"
-                    />
+                    <TabButton tab="data" label="Data" />
+                    <TabButton tab="time" label="Time" />
+                    <TabButton tab="dev" label="Dev" />
                 </View>
 
                 {activeTab === 'colors' && <ColorConverter />}
@@ -668,6 +638,13 @@ const TimeZones: React.FC = () => {
     const [timePickerVisible, setTimePickerVisible] = useState(false);
     const [baseCitySelectorVisible, setBaseCitySelectorVisible] = useState(false);
 
+    // Confirm dialog state for city removal
+    const [confirmDialog, setConfirmDialog] = useState<{ visible: boolean; id: string; name: string }>({
+        visible: false,
+        id: '',
+        name: '',
+    });
+
     // Update "real time" every second
     useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
@@ -836,7 +813,18 @@ const TimeZones: React.FC = () => {
     };
 
     const removeCity = (id: string) => {
-        setCities(prev => prev.filter(c => c.id !== id));
+        const cityToRemove = cities.find(c => c.id === id);
+        const cityName = cityToRemove?.name || 'this city';
+        setConfirmDialog({ visible: true, id, name: cityName });
+    };
+
+    const handleConfirmRemoveCity = () => {
+        setCities(prev => prev.filter(c => c.id !== confirmDialog.id));
+        setConfirmDialog({ visible: false, id: '', name: '' });
+    };
+
+    const handleCancelRemoveCity = () => {
+        setConfirmDialog({ visible: false, id: '', name: '' });
     };
 
     const selectBaseCity = (cityId: string, cityData?: WorldCity) => {
@@ -1044,6 +1032,17 @@ const TimeZones: React.FC = () => {
                 selectedValue=""
                 onSelect={addCity}
             />
+
+            <ConfirmDialog
+                visible={confirmDialog.visible}
+                title="Remove City"
+                message={`Remove ${confirmDialog.name} from your list?`}
+                confirmText="Remove"
+                cancelText="Cancel"
+                onConfirm={handleConfirmRemoveCity}
+                onCancel={handleCancelRemoveCity}
+                destructive
+            />
         </View>
     );
 };
@@ -1056,10 +1055,10 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, gap: 16 },
     tabContainer: { flexDirection: 'row', backgroundColor: colors.input, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: colors.subtle },
-    tabButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12 },
+    tabButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12 },
     tabButtonActive: { backgroundColor: colors.accent },
     tabButtonText: { fontSize: 12, fontWeight: '500', color: colors.secondary },
-    tabButtonTextActive: { color: colors.main },
+    tabButtonTextActive: { color: colors.primary },
     content: { gap: 16 },
     sectionDivider: { height: 1, backgroundColor: colors.subtle, marginVertical: 8 },
 

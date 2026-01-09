@@ -64,44 +64,46 @@ export const ButterConverter: React.FC = () => {
             {/* Unit Selector */}
             <View style={styles.unitSelector}>
                 {BUTTER_UNITS.slice(0, 3).map((unit) => (
-                    <View
+                    <TouchableOpacity
                         key={unit.id}
                         style={[
                             styles.unitButton,
                             fromUnit === unit.id && styles.unitButtonActive
                         ]}
+                        onPress={() => setFromUnit(unit.id)}
+                        activeOpacity={0.7}
                     >
                         <Text
                             style={[
                                 styles.unitButtonText,
                                 fromUnit === unit.id && styles.unitButtonTextActive
                             ]}
-                            onPress={() => setFromUnit(unit.id)}
                         >
                             {unit.label}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 ))}
             </View>
             <View style={styles.unitSelector}>
                 {BUTTER_UNITS.slice(3).map((unit) => (
-                    <View
+                    <TouchableOpacity
                         key={unit.id}
                         style={[
                             styles.unitButton,
                             fromUnit === unit.id && styles.unitButtonActive
                         ]}
+                        onPress={() => setFromUnit(unit.id)}
+                        activeOpacity={0.7}
                     >
                         <Text
                             style={[
                                 styles.unitButtonText,
                                 fromUnit === unit.id && styles.unitButtonTextActive
                             ]}
-                            onPress={() => setFromUnit(unit.id)}
                         >
                             {unit.label}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 ))}
             </View>
 
@@ -175,16 +177,16 @@ const styles = StyleSheet.create({
     unitSelector: {
         flexDirection: 'row',
         backgroundColor: colors.input,
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 4,
         borderWidth: 1,
         borderColor: colors.subtle,
     },
     unitButton: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: 'center',
-        borderRadius: 8,
+        borderRadius: 12,
     },
     unitButtonActive: {
         backgroundColor: colors.accent,
@@ -196,7 +198,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     unitButtonTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     results: {
         gap: 8,

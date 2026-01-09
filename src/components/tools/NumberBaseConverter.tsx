@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     baseButtonTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     inputSection: {
         backgroundColor: colors.input,

@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     presetTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     scaleDisplay: {
         backgroundColor: colors.accent,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 10,
         fontWeight: '600',
-        color: colors.main,
+        color: colors.primary,
         opacity: 0.7,
         letterSpacing: 1,
     },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 28,
         fontWeight: '600',
-        color: colors.main,
+        color: colors.primary,
     },
     ingredientSection: {
         backgroundColor: colors.input,

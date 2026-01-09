@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Flame, Scale, Sparkles, X, Search, Plus, Minus } from 'lucide-react-native';
+import { X, Search, Plus, Minus, ChevronDown } from 'lucide-react-native';
 
 import { KITCHEN_UNITS, INGREDIENTS } from '../constants';
 import { KitchenIngredient } from '../types';
@@ -218,12 +218,11 @@ export const KitchenScreen: React.FC = () => {
         }
     }, [customIngredients]);
 
-    const TabButton = ({ tab, icon, label }: { tab: KitchenTab; icon: React.ReactNode; label: string }) => (
+    const TabButton = ({ tab, label }: { tab: KitchenTab; label: string }) => (
         <TouchableOpacity
             onPress={() => setActiveTab(tab)}
             style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
         >
-            {icon}
             <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
                 {label}
             </Text>
@@ -273,17 +272,29 @@ export const KitchenScreen: React.FC = () => {
             <View style={styles.unitsContainer}>
                 <View style={styles.unitField}>
                     <Text style={styles.unitLabel}>FROM</Text>
-                    <PickerButton
-                        value={KITCHEN_UNITS.find(u => u.id === fromUnitId)?.label || ''}
+                    <TouchableOpacity
+                        style={styles.staticPickerButton}
                         onPress={() => setFromModalVisible(true)}
-                    />
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.staticPickerButtonText} numberOfLines={1}>
+                            {KITCHEN_UNITS.find(u => u.id === fromUnitId)?.label || ''}
+                        </Text>
+                        <ChevronDown size={18} color={colors.secondary} />
+                    </TouchableOpacity>
                 </View>
                 <View style={styles.unitField}>
                     <Text style={styles.unitLabel}>TO</Text>
-                    <PickerButton
-                        value={KITCHEN_UNITS.find(u => u.id === toUnitId)?.label || ''}
+                    <TouchableOpacity
+                        style={styles.staticPickerButton}
                         onPress={() => setToModalVisible(true)}
-                    />
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.staticPickerButtonText} numberOfLines={1}>
+                            {KITCHEN_UNITS.find(u => u.id === toUnitId)?.label || ''}
+                        </Text>
+                        <ChevronDown size={18} color={colors.secondary} />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -529,21 +540,9 @@ export const KitchenScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.tabContainer}>
-                    <TabButton
-                        tab="ingredients"
-                        icon={<Scale size={16} color={activeTab === 'ingredients' ? colors.main : colors.secondary} />}
-                        label="Ingredients"
-                    />
-                    <TabButton
-                        tab="oven"
-                        icon={<Flame size={16} color={activeTab === 'oven' ? colors.main : colors.secondary} />}
-                        label="Oven"
-                    />
-                    <TabButton
-                        tab="special"
-                        icon={<Sparkles size={16} color={activeTab === 'special' ? colors.main : colors.secondary} />}
-                        label="Quick Ref"
-                    />
+                    <TabButton tab="ingredients" label="Ingredients" />
+                    <TabButton tab="oven" label="Oven" />
+                    <TabButton tab="special" label="Quick Ref" />
                 </View>
 
                 {activeTab === 'ingredients' && renderIngredients()}
@@ -597,16 +596,14 @@ const styles = StyleSheet.create({
     },
     tabButton: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
         paddingVertical: 14,
         borderRadius: 12,
     },
     tabButtonActive: { backgroundColor: colors.accent },
     tabButtonText: { fontSize: 12, fontWeight: '500', color: colors.secondary },
-    tabButtonTextActive: { color: colors.main },
+    tabButtonTextActive: { color: colors.primary },
     content: { gap: 20 },
     section: { gap: 8 },
     sectionLargeGap: { gap: 24 },
@@ -637,6 +634,23 @@ const styles = StyleSheet.create({
     unitsContainer: { gap: 12 },
     unitField: { gap: 8 },
     unitLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
+    staticPickerButton: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.input,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.subtle,
+        paddingHorizontal: 16,
+        paddingVertical: 18,
+    },
+    staticPickerButtonText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: colors.primary,
+        flex: 1,
+    },
     resultContainer: {
         backgroundColor: colors.input,
         borderRadius: 16,

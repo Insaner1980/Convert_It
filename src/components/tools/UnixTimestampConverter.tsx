@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 11,
         fontWeight: '600',
-        color: colors.main,
+        color: colors.primary,
         letterSpacing: 1,
         opacity: 0.7,
     },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 32,
         fontWeight: '600',
-        color: colors.main,
+        color: colors.primary,
         letterSpacing: 2,
     },
     inputSection: {

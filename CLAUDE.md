@@ -1,6 +1,6 @@
-# Claude AI - Convert It Project Guide
+# Claude AI - UnitX Project Guide
 
-**Project:** Convert It - Premium Mobile Conversion Utility
+**Project:** UnitX - Premium Mobile Conversion Utility
 **Platform:** React Native (Expo) + TypeScript
 **Last Updated:** 2026-01-09
 
@@ -26,7 +26,7 @@
 
 ## Project Overview
 
-Convert It is a **premium dark-themed mobile app** with red accent color for unit conversions, size charts, kitchen tools, currency exchange, and utility tools.
+UnitX is a **premium dark-themed mobile app** with red accent color for unit conversions, size charts, kitchen tools, currency exchange, and utility tools.
 
 **Design Principles:**
 - **Minimalism** - Clean, distraction-free interface
@@ -36,6 +36,7 @@ Convert It is a **premium dark-themed mobile app** with red accent color for uni
 
 **Target Device:** Google Pixel 9 (Android)
 **Design Language:** Dark theme with red (#A30000) accent
+**Logo:** Two arrows (→←) - shown only on main screen header
 
 ---
 
@@ -43,13 +44,20 @@ Convert It is a **premium dark-themed mobile app** with red accent color for uni
 
 ### Directory Structure
 ```
-Convert_It/
+UnitX/
+├── assets/
+│   ├── adaptive-icon.png       # App logo (two arrows)
+│   ├── splash-arrow-right.png  # Splash animation arrow →
+│   ├── splash-arrow-left.png   # Splash animation arrow ←
+│   └── ...
 ├── src/
 │   ├── components/
 │   │   ├── AnimatedInput.tsx
 │   │   ├── AnimatedPressable.tsx
 │   │   ├── AnimatedResult.tsx
+│   │   ├── AnimatedSplash.tsx      # Animated splash screen
 │   │   ├── AnimatedTabButton.tsx
+│   │   ├── ConfirmDialog.tsx
 │   │   ├── PickerButton.tsx
 │   │   ├── PickerModal.tsx
 │   │   ├── index.ts
@@ -80,8 +88,7 @@ Convert_It/
 │       └── index.ts
 ├── App.tsx
 ├── UI_SPEC.md
-├── CLAUDE.md
-└── TROUBLESHOOTING.md
+└── CLAUDE.md
 ```
 
 ### Key Principles
@@ -132,7 +139,7 @@ import { colors } from '../theme/colors';
 ```
 
 **Active/Inactive Pattern:**
-- Active: `backgroundColor: colors.accent` (red), `color: colors.main` (black)
+- Active: `backgroundColor: colors.accent` (red), `color: colors.primary` (white)
 - Inactive: `backgroundColor: transparent`, `color: colors.secondary`
 
 ### Spacing
@@ -231,10 +238,65 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     activeButtonText: {
-        color: colors.main,
+        color: colors.primary,  // White text on red background
         fontWeight: '600',
     },
 });
+```
+
+### Pill/Tab Button Pattern (IMPORTANT!)
+
+**Always use TouchableOpacity for pill buttons, not View + Text with onPress:**
+
+```typescript
+// BAD - borderRadius won't apply to active background correctly
+<View style={[styles.pill, isActive && styles.pillActive]}>
+    <Text onPress={handlePress}>{label}</Text>  // ❌
+</View>
+
+// GOOD - borderRadius works correctly
+<TouchableOpacity
+    style={[styles.pill, isActive && styles.pillActive]}
+    onPress={handlePress}  // ✅
+    activeOpacity={0.7}
+>
+    <Text>{label}</Text>
+</TouchableOpacity>
+```
+
+### ConfirmDialog Usage
+
+**Use ConfirmDialog instead of Alert.alert for destructive actions:**
+
+```typescript
+import { ConfirmDialog } from '../components/ConfirmDialog';
+
+// State
+const [confirmDialog, setConfirmDialog] = useState({
+    visible: false,
+    id: '',
+    name: '',
+});
+
+// Show dialog
+const handleRemove = (id: string, name: string) => {
+    setConfirmDialog({ visible: true, id, name });
+};
+
+// JSX
+<ConfirmDialog
+    visible={confirmDialog.visible}
+    title="Remove Item"
+    message={`Remove ${confirmDialog.name}?`}
+    confirmText="Remove"
+    cancelText="Cancel"
+    onConfirm={() => {
+        // Do removal
+        setConfirmDialog({ visible: false, id: '', name: '' });
+    }}
+    onCancel={() => setConfirmDialog({ visible: false, id: '', name: '' })}
+    destructive
+/>
 ```
 
 ---
@@ -248,6 +310,10 @@ const styles = StyleSheet.create({
 5. ❌ **Don't merge Currency into Convert** - Keep 5 tabs
 6. ❌ **Don't add new bottom tabs** - Use horizontal pills instead
 7. ❌ **Don't animate width/height** - Only `transform` and `opacity`
+8. ❌ **Don't use View + Text onPress for pills** - Use TouchableOpacity (borderRadius issue)
+9. ❌ **Don't use Alert.alert for destructive actions** - Use ConfirmDialog component
+10. ❌ **Don't add icons to tab/category buttons** - Text only for consistent spacing
+11. ❌ **Don't use black text on red background** - Use white (`colors.primary`)
 
 ---
 
@@ -273,6 +339,7 @@ const styles = StyleSheet.create({
   "react-native-gesture-handler": "~2.28.0",
   "expo-location": "~19.0.8",
   "expo-clipboard": "~8.0.8",
+  "expo-splash-screen": "~0.30.8",
   "lucide-react-native": "^0.562.0",
   "@react-navigation/bottom-tabs": "^7.9.0"
 }
@@ -281,6 +348,12 @@ const styles = StyleSheet.create({
 ---
 
 ## External APIs
+
+### ExchangeRate-API
+- **File:** `CurrencyScreen.tsx`
+- **Endpoint:** `https://v6.exchangerate-api.com/v6/{API_KEY}`
+- **Usage:** Real-time currency exchange rates (156 currencies)
+- **API Key:** Stored in component (free tier: 1500 requests/month)
 
 ### USDA FoodData Central
 - **File:** `KitchenScreen.tsx`

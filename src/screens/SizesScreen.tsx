@@ -10,7 +10,7 @@ import {
     Pressable,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Shirt, Footprints, Baby, Ruler, Globe, Check, X } from 'lucide-react-native';
+import { Globe, Check, X } from 'lucide-react-native';
 
 import {
     SHOE_SIZES_MEN, SHOE_SIZES_WOMEN, SHOE_SIZES_KIDS,
@@ -139,17 +139,6 @@ export const SizesScreen: React.FC = () => {
         }
         return [];
     }, [gender, category]);
-
-    const getCategoryIcon = (cat: SizeCategory) => {
-        const iconProps = { size: 16, color: category === cat ? colors.main : colors.secondary };
-        switch (cat) {
-            case 'shoes': return <Footprints {...iconProps} />;
-            case 'tops': return <Shirt {...iconProps} />;
-            case 'bottoms': return <Ruler {...iconProps} />;
-            case 'baby': return <Baby {...iconProps} />;
-            default: return null;
-        }
-    };
 
     const getBandLabel = (eu: number, region: string) => {
         const map = BRA_BAND_MAP[eu];
@@ -374,7 +363,6 @@ export const SizesScreen: React.FC = () => {
                                 category === cat && styles.categoryPillActive
                             ]}
                         >
-                            {getCategoryIcon(cat)}
                             <Text style={[
                                 styles.categoryPillText,
                                 category === cat && styles.categoryPillTextActive
@@ -437,27 +425,25 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     genderButtonTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     categoryContainer: {
         flexDirection: 'row',
-        gap: 8,
-    },
-    categoryPill: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        paddingVertical: 12,
-        borderRadius: 16,
         backgroundColor: colors.input,
+        borderRadius: 16,
+        padding: 4,
         borderWidth: 1,
         borderColor: colors.subtle,
     },
+    categoryPill: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: 12,
+    },
     categoryPillActive: {
         backgroundColor: colors.accent,
-        borderColor: colors.accent,
     },
     categoryPillText: {
         fontSize: 14,
@@ -465,7 +451,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     categoryPillTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     tableContainer: {
         backgroundColor: colors.input,

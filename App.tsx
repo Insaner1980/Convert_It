@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
@@ -13,12 +14,18 @@ import {
   LayoutGrid
 } from 'lucide-react-native';
 
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
+
 // Import screens
 import { ConverterScreen } from './src/screens/ConverterScreen';
 import { SizesScreen } from './src/screens/SizesScreen';
 import { KitchenScreen } from './src/screens/KitchenScreen';
 import { CurrencyScreen } from './src/screens/CurrencyScreen';
 import { ToolsScreen } from './src/screens/ToolsScreen';
+
+// Import components
+import { AnimatedSplash } from './src/components/AnimatedSplash';
 
 import { colors } from './src/theme/colors';
 
@@ -82,6 +89,17 @@ const styles = StyleSheet.create({
 });
 
 export default function App() {
+  const [splashAnimationComplete, setSplashAnimationComplete] = useState(false);
+
+  useEffect(() => {
+    // Hide native splash screen immediately, show our animated one
+    SplashScreen.hideAsync();
+  }, []);
+
+  const handleSplashComplete = useCallback(() => {
+    setSplashAnimationComplete(true);
+  }, []);
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
@@ -107,6 +125,9 @@ export default function App() {
           <TabNavigator />
         </NavigationContainer>
         <StatusBar style="light" />
+        {!splashAnimationComplete && (
+          <AnimatedSplash onComplete={handleSplashComplete} />
+        )}
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

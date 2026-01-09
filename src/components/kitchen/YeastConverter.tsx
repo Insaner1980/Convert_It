@@ -61,23 +61,24 @@ export const YeastConverter: React.FC = () => {
             {/* Type Selector */}
             <View style={styles.typeSelector}>
                 {YEAST_TYPES.map((yeast) => (
-                    <View
+                    <TouchableOpacity
                         key={yeast.id}
                         style={[
                             styles.typeButton,
                             fromType === yeast.id && styles.typeButtonActive
                         ]}
+                        onPress={() => setFromType(yeast.id)}
+                        activeOpacity={0.7}
                     >
                         <Text
                             style={[
                                 styles.typeButtonText,
                                 fromType === yeast.id && styles.typeButtonTextActive
                             ]}
-                            onPress={() => setFromType(yeast.id)}
                         >
                             {yeast.label}
                         </Text>
-                    </View>
+                    </TouchableOpacity>
                 ))}
             </View>
 
@@ -156,16 +157,16 @@ const styles = StyleSheet.create({
     typeSelector: {
         flexDirection: 'row',
         backgroundColor: colors.input,
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 4,
         borderWidth: 1,
         borderColor: colors.subtle,
     },
     typeButton: {
         flex: 1,
-        paddingVertical: 10,
+        paddingVertical: 12,
         alignItems: 'center',
-        borderRadius: 8,
+        borderRadius: 12,
     },
     typeButtonActive: {
         backgroundColor: colors.accent,
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     typeButtonTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     results: {
         gap: 8,

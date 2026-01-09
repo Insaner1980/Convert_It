@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     modeButtonTextActive: {
-        color: colors.main,
+        color: colors.primary,
     },
     inputSection: {
         backgroundColor: colors.input,
