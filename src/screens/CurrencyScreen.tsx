@@ -10,7 +10,6 @@ import {
     Modal,
     Pressable,
     FlatList,
-    Alert,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,6 +59,14 @@ export const CurrencyScreen: React.FC = () => {
     const [lastUpdated, setLastUpdated] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Toast notification state
+    const [toast, setToast] = useState<string | null>(null);
+
+    const showToast = (message: string) => {
+        setToast(message);
+        setTimeout(() => setToast(null), 2500);
+    };
 
     const fetchRates = async (base: string = 'EUR') => {
         setLoading(true);
@@ -140,12 +147,12 @@ export const CurrencyScreen: React.FC = () => {
     const removeCurrency = (code: string) => {
         // Don't allow removing if it's currently selected
         if (code === fromCurrency || code === toCurrency) {
-            Alert.alert('Cannot Remove', `${code} is currently in use. Select a different currency first.`);
+            showToast(`${code} is currently in use`);
             return;
         }
         // Keep at least 2 currencies
         if (favoriteCurrencies.length <= 2) {
-            Alert.alert('Cannot Remove', 'You need at least 2 currencies.');
+            showToast('You need at least 2 currencies');
             return;
         }
         // Show confirm dialog
@@ -250,8 +257,7 @@ export const CurrencyScreen: React.FC = () => {
                             setSearchModalVisible(true);
                         }}
                     >
-                        <Plus size={20} color={colors.accent} />
-                        <Text style={styles.addButtonText}>Add Currency</Text>
+                        <Plus size={24} color={colors.accent} />
                     </TouchableOpacity>
                 </View>
             </Pressable>
@@ -510,6 +516,13 @@ export const CurrencyScreen: React.FC = () => {
                 onCancel={handleCancelRemove}
                 destructive
             />
+
+            {/* Toast notification */}
+            {toast && (
+                <View style={styles.toast}>
+                    <Text style={styles.toastText}>{toast}</Text>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -593,7 +606,6 @@ const styles = StyleSheet.create({
     modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
     inUseHint: { fontSize: 11, color: colors.secondary, backgroundColor: colors.subtle, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
     addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, borderTopWidth: 1, borderTopColor: colors.subtle },
-    addButtonText: { fontSize: 16, fontWeight: '600', color: colors.accent },
 
     // Search modal styles
     searchModalContainer: { flex: 1, backgroundColor: colors.overlay },
@@ -648,4 +660,25 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     addedBadgeText: { fontSize: 8, fontWeight: '700', color: colors.main },
+
+    // Toast styles
+    toast: {
+        position: 'absolute',
+        bottom: 100,
+        left: 16,
+        right: 16,
+        backgroundColor: colors.card,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.subtle,
+        alignItems: 'center',
+    },
+    toastText: {
+        color: colors.primary,
+        fontSize: 14,
+        fontWeight: '500',
+        textAlign: 'center',
+    },
 });

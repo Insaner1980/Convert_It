@@ -35,6 +35,15 @@ export const DATA_UNITS: ConverterOption[] = [
   { id: 'bit', label: 'Bits (b)', factor: 0.125 }, // 1/8 byte
 ];
 
+export const SPEED_UNITS: ConverterOption[] = [
+  { id: 'ms', label: 'Meters/second (m/s)', factor: 1 },
+  { id: 'kmh', label: 'Kilometers/hour (km/h)', factor: 0.277778 },
+  { id: 'mph', label: 'Miles/hour (mph)', factor: 0.44704 },
+  { id: 'knot', label: 'Knots (kn)', factor: 0.514444 },
+  { id: 'fts', label: 'Feet/second (ft/s)', factor: 0.3048 },
+  { id: 'mach', label: 'Mach', factor: 343 }, // Speed of sound at sea level
+];
+
 // --- Kitchen Data ---
 
 // Base: Grams for Weight, Cups (US) for Volume

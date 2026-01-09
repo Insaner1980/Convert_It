@@ -18,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ArrowLeftRight } from 'lucide-react-native';
 
-import { LENGTH_UNITS, WEIGHT_UNITS, TEMPERATURE_UNITS } from '../constants';
+import { LENGTH_UNITS, WEIGHT_UNITS, TEMPERATURE_UNITS, SPEED_UNITS } from '../constants';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
 import { PickerModal } from '../components/PickerModal';
@@ -32,6 +32,7 @@ enum Category {
     LENGTH = 'Length',
     WEIGHT = 'Weight',
     TEMPERATURE = 'Temperature',
+    SPEED = 'Speed',
 }
 
 export const ConverterScreen: React.FC = () => {
@@ -57,6 +58,7 @@ export const ConverterScreen: React.FC = () => {
             case Category.LENGTH: return LENGTH_UNITS;
             case Category.WEIGHT: return WEIGHT_UNITS;
             case Category.TEMPERATURE: return TEMPERATURE_UNITS;
+            case Category.SPEED: return SPEED_UNITS;
             default: return LENGTH_UNITS;
         }
     }, [category]);

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -9,7 +9,6 @@ import {
     Modal,
     FlatList,
     ActivityIndicator,
-    Alert,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +69,15 @@ export const KitchenScreen: React.FC = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [copied, setCopied] = useState(false);
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Toast notification state
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 2500);
+    };
 
     const copyToClipboard = async (text: string) => {
         await Clipboard.setStringAsync(text);
@@ -139,12 +147,35 @@ export const KitchenScreen: React.FC = () => {
             setSearchResults(data.foods || []);
         } catch (error) {
             console.error('USDA search error:', error);
-            Alert.alert('Search Error', 'Could not search USDA database. Check your API key or internet connection.');
+            showToast('Could not search USDA database', 'error');
             setSearchResults([]);
         } finally {
             setIsSearching(false);
         }
     }, [searchQuery]);
+
+    // Auto-search when typing (debounced)
+    useEffect(() => {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+
+        if (searchQuery.trim().length < 2) {
+            setSearchResults([]);
+            return;
+        }
+
+        setIsSearching(true);
+        searchTimerRef.current = setTimeout(() => {
+            searchUSDA();
+        }, 500);
+
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
+    }, [searchQuery, searchUSDA]);
 
     // Get food details and add to custom ingredients
     const addFoodFromUSDA = useCallback(async (food: USDAFood) => {
@@ -197,14 +228,11 @@ export const KitchenScreen: React.FC = () => {
 
             // Check if already added
             if (customIngredients.some(i => i.id === newIngredient.id)) {
-                Alert.alert('Already Added', 'This ingredient is already in your list.');
+                showToast('This ingredient is already in your list', 'info');
             } else {
                 setCustomIngredients(prev => [...prev, newIngredient]);
                 setIngredientId(newIngredient.id);
-                Alert.alert(
-                    'Ingredient Added!',
-                    `${food.description}\nDensity: ${Math.round(density)}g per cup`
-                );
+                showToast(`Added: ${food.description}`, 'success');
             }
 
             setSearchModalVisible(false);
@@ -212,7 +240,7 @@ export const KitchenScreen: React.FC = () => {
             setSearchResults([]);
         } catch (error) {
             console.error('USDA detail error:', error);
-            Alert.alert('Error', 'Could not get ingredient details.');
+            showToast('Could not get ingredient details', 'error');
         } finally {
             setIsLoadingDetails(false);
         }
@@ -244,8 +272,7 @@ export const KitchenScreen: React.FC = () => {
                         style={styles.addButton}
                         onPress={() => setSearchModalVisible(true)}
                     >
-                        <Plus size={16} color={colors.accent} />
-                        <Text style={styles.addButtonText}>Add from USDA</Text>
+                        <Plus size={20} color={colors.accent} />
                     </TouchableOpacity>
                 </View>
                 <PickerButton
@@ -466,25 +493,15 @@ export const KitchenScreen: React.FC = () => {
                         <Search size={20} color={colors.secondary} />
                         <TextInput
                             style={styles.searchInput}
-                            placeholder="Search ingredients (e.g., flour, sugar)..."
+                            placeholder="Search ingredients..."
                             placeholderTextColor={colors.secondary}
                             value={searchQuery}
                             onChangeText={setSearchQuery}
-                            onSubmitEditing={searchUSDA}
-                            returnKeyType="search"
                             autoFocus
                         />
-                        <TouchableOpacity
-                            style={styles.searchButton}
-                            onPress={searchUSDA}
-                            disabled={isSearching}
-                        >
-                            {isSearching ? (
-                                <ActivityIndicator size="small" color={colors.accent} />
-                            ) : (
-                                <Text style={styles.searchButtonText}>Search</Text>
-                            )}
-                        </TouchableOpacity>
+                        {isSearching && (
+                            <ActivityIndicator size="small" color={colors.accent} />
+                        )}
                     </View>
 
                     <Text style={styles.searchHint}>
@@ -576,6 +593,17 @@ export const KitchenScreen: React.FC = () => {
             />
 
             {renderSearchModal()}
+
+            {/* Toast notification */}
+            {toast && (
+                <View style={[
+                    styles.toast,
+                    toast.type === 'error' && styles.toastError,
+                    toast.type === 'success' && styles.toastSuccess,
+                ]}>
+                    <Text style={styles.toastText}>{toast.message}</Text>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -619,7 +647,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 6,
     },
-    addButtonText: { fontSize: 12, fontWeight: '600', color: colors.accent },
     densityInfo: { fontSize: 12, color: colors.secondary, marginLeft: 4 },
     inputSection: {
         backgroundColor: colors.input,
@@ -691,13 +718,6 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     searchInput: { flex: 1, color: colors.primary, fontSize: 16, paddingVertical: 16 },
-    searchButton: {
-        backgroundColor: colors.accent,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 12,
-    },
-    searchButtonText: { color: colors.main, fontWeight: '600', fontSize: 14 },
     searchHint: { fontSize: 12, color: colors.secondary, textAlign: 'center', marginBottom: 16 },
     searchResultItem: {
         flexDirection: 'row',
@@ -752,5 +772,32 @@ const styles = StyleSheet.create({
         color: colors.main,
         fontSize: 12,
         fontWeight: '600',
+    },
+
+    // Toast styles
+    toast: {
+        position: 'absolute',
+        bottom: 100,
+        left: 16,
+        right: 16,
+        backgroundColor: colors.card,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.subtle,
+        alignItems: 'center',
+    },
+    toastError: {
+        borderColor: colors.accent,
+    },
+    toastSuccess: {
+        backgroundColor: colors.accent,
+    },
+    toastText: {
+        color: colors.primary,
+        fontSize: 14,
+        fontWeight: '500',
+        textAlign: 'center',
     },
 });
