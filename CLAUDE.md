@@ -2,7 +2,7 @@
 
 **Project:** Convert It - Premium Mobile Conversion Utility
 **Platform:** React Native (Expo) + TypeScript
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-01-09
 
 ---
 
@@ -11,6 +11,7 @@
 **Before making ANY changes, read:**
 1. `UI_SPEC.md` - The single source of truth for UI design
 2. This file - Working guidelines
+3. `TROUBLESHOOTING.md` - Common issues and solutions
 
 **Expo Development Server:**
 - DO NOT start Expo (`npm start`) - the user will start it manually
@@ -34,7 +35,7 @@ Convert It is a **premium dark-themed mobile app** with red accent color for uni
 - **Privacy** - No tracking, no server dependencies (except APIs)
 
 **Target Device:** Google Pixel 9 (Android)
-**Design Language:** Dark theme with red (#FF0000) accent
+**Design Language:** Dark theme with red (#A30000) accent
 
 ---
 
@@ -79,7 +80,8 @@ Convert_It/
 │       └── index.ts
 ├── App.tsx
 ├── UI_SPEC.md
-└── CLAUDE.md
+├── CLAUDE.md
+└── TROUBLESHOOTING.md
 ```
 
 ### Key Principles
@@ -124,8 +126,8 @@ import { colors } from '../theme/colors';
   subtle: '#262626',      // Borders
   primary: '#ffffff',     // Primary text
   secondary: '#6b6b6b',   // Secondary text
-  accent: '#FF0000',      // Red - active states, highlights
-  accentHover: '#cc0000', // Darker red - hover states
+  accent: '#A30000',      // Red - active states, highlights
+  accentHover: '#7a0000', // Darker red - hover states
 }
 ```
 
@@ -314,11 +316,12 @@ Before delivering:
 ## When in Doubt
 
 1. Check `UI_SPEC.md`
-2. Check existing code patterns
-3. Use `colors.ts` for all colors
-4. Define sub-components outside parent components
-5. Ask the user before major changes
+2. Check `TROUBLESHOOTING.md` if something breaks
+3. Check existing code patterns
+4. Use `colors.ts` for all colors
+5. Define sub-components outside parent components
+6. Ask the user before major changes
 
 ---
 
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-01-09

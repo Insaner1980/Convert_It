@@ -1,7 +1,7 @@
 # Convert It - UI Specification
 
 **Version:** 3.0
-**Date:** 2026-01-08
+**Date:** 2026-01-09
 **Platform:** React Native (Expo) - Android (Google Pixel 9)
 
 ---
@@ -25,17 +25,17 @@
   subtle: '#262626',      // Subtle borders
   primary: '#ffffff',     // Bright white (primary text)
   secondary: '#6b6b6b',   // Medium gray (secondary text)
-  accent: '#FF0000',      // Red (active states, buttons, highlights)
-  accentHover: '#cc0000', // Darker red (hover/press states)
+  accent: '#A30000',      // Red (active states, buttons, highlights)
+  accentHover: '#7a0000', // Darker red (hover/press states)
   overlay: 'rgba(0,0,0,0.7)', // Modal overlay
 }
 ```
 
 ### Usage Guidelines
-- **Active states:** Red background (`#FF0000`) with black text (`#000000`)
+- **Active states:** Red background (`#A30000`) with black text (`#000000`)
 - **Inactive states:** Card/input background with gray text
 - **Bottom tab bar:** `#0f0f0f` (card color)
-- **Active tab icon:** `#FF0000` (red)
+- **Active tab icon:** `#A30000` (red)
 - **Inactive tab icon:** `#6b6b6b` (gray)
 - **Copied badge:** Red background with black text
 
@@ -245,7 +245,7 @@ copiedBadge: {
   position: 'absolute',
   top: 4-8,
   right: 4-8,
-  backgroundColor: colors.accent,  // #FF0000
+  backgroundColor: colors.accent,  // #A30000
   paddingHorizontal: 8-12,
   paddingVertical: 2-4,
   borderRadius: 8-12,
@@ -289,7 +289,7 @@ copiedText: {
 ### Active Pills/Tabs
 ```typescript
 {
-  backgroundColor: colors.accent,  // #FF0000
+  backgroundColor: colors.accent,  // #A30000
   borderRadius: 8-12,
   paddingHorizontal: 12-24,
   paddingVertical: 8-12,
@@ -454,4 +454,4 @@ src/
 
 ---
 
-**Last Updated:** 2026-01-08
+**Last Updated:** 2026-01-09

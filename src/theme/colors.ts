@@ -9,8 +9,8 @@ export const colors = {
     subtle: '#262626',    // Subtle borders
     primary: '#ffffff',   // Bright white text
     secondary: '#6b6b6b', // Mid-gray secondary text
-    accent: '#FF0000',    // Red accent (active states, buttons)
-    accentHover: '#cc0000', // Darker red for hover
+    accent: '#A30000',    // Red accent (active states, buttons)
+    accentHover: '#7a0000', // Darker red for hover
     overlay: 'rgba(0,0,0,0.7)', // Modal overlay background
 };
 
