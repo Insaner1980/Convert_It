@@ -437,8 +437,7 @@ export const CurrencyScreen: React.FC = () => {
                                     style={styles.addCurrencyButton}
                                     onPress={() => setSearchModalVisible(true)}
                                 >
-                                    <Plus size={16} color={colors.accent} />
-                                    <Text style={styles.addCurrencyText}>Add</Text>
+                                    <Plus size={20} color={colors.accent} />
                                 </TouchableOpacity>
                             </View>
                             <Text style={styles.myCurrenciesHint}>Long press to remove</Text>
@@ -626,7 +625,6 @@ const styles = StyleSheet.create({
     myCurrenciesLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
     myCurrenciesHint: { fontSize: 11, color: colors.secondary, marginLeft: 4 },
     addCurrencyButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    addCurrencyText: { fontSize: 14, fontWeight: '600', color: colors.accent },
     currencyPillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     currencyPill: {
         flexDirection: 'column',

@@ -961,8 +961,7 @@ const TimeZones: React.FC = () => {
                         <Text style={styles.sortButtonText}>{getSortLabel()}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setCitySelectorVisible(true)} style={styles.addCityButton}>
-                        <Plus size={14} color={colors.accent} />
-                        <Text style={styles.addCityText}>Add City</Text>
+                        <Plus size={20} color={colors.accent} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -1090,7 +1089,6 @@ const styles = StyleSheet.create({
     sortButton: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.subtle },
     sortButtonText: { fontSize: 11, fontWeight: '600', color: colors.secondary },
     addCityButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    addCityText: { color: colors.accent, fontWeight: '600', fontSize: 14 },
 
     cityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 12 },
     cityInfo: { flex: 1 },
