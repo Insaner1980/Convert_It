@@ -1,13 +1,14 @@
 // src/components/kitchen/YeastConverter.tsx
 // Convert between different yeast types
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
 import { shadows } from '../../theme';
 import { useClipboard } from '../../hooks';
 import { MarqueeInput } from '../MarqueeInput';
+import { CopiedBadge } from '../CopiedBadge';
 
 type YeastType = 'fresh' | 'active' | 'instant';
 
@@ -22,11 +23,24 @@ export const YeastConverter: React.FC = () => {
     const [fromType, setFromType] = useState<YeastType>('fresh');
     const [copiedType, setCopiedType] = useState<YeastType | null>(null);
     const { copyToClipboard } = useClipboard();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleCopy = async (text: string, type: YeastType) => {
         await copyToClipboard(text);
         setCopiedType(type);
-        setTimeout(() => setCopiedType(null), 1500);
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopiedType(null), 1500);
     };
 
     const conversions = useMemo(() => {
@@ -97,11 +111,7 @@ export const YeastConverter: React.FC = () => {
                             onPress={() => handleCopy(`${conv.amount}g`, conv.id)}
                             activeOpacity={0.7}
                         >
-                            {copiedType === conv.id && (
-                                <View style={styles.copiedBadge}>
-                                    <Text style={styles.copiedText}>Copied!</Text>
-                                </View>
-                            )}
+                            {copiedType === conv.id && <CopiedBadge size="small" />}
                             <Text style={styles.resultLabel}>{conv.label}</Text>
                             <Text style={styles.resultValue}>
                                 {conv.amount}g
@@ -195,21 +205,5 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         color: colors.primary,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

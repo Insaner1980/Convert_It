@@ -9,6 +9,7 @@ import { shadows } from '../../theme';
 import { AnimatedPressable } from '../AnimatedPressable';
 import { Minus, Plus } from 'lucide-react-native';
 import { useClipboard } from '../../hooks';
+import { CopiedBadge } from '../CopiedBadge';
 
 export const ServingSizeAdjuster: React.FC = () => {
     const [originalServings, setOriginalServings] = useState('4');
@@ -147,11 +148,7 @@ export const ServingSizeAdjuster: React.FC = () => {
                         onPress={() => scaledAmount !== '---' && copyToClipboard(scaledAmount)}
                         activeOpacity={0.7}
                     >
-                        {copied && (
-                            <View style={styles.copiedBadge}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copied && <CopiedBadge size="small" />}
                         <Text style={styles.resultValue} numberOfLines={2} adjustsFontSizeToFit>{scaledAmount}</Text>
                     </TouchableOpacity>
                 </View>
@@ -328,21 +325,5 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.primary,
         textAlign: 'center',
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: -4,
-        right: -4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

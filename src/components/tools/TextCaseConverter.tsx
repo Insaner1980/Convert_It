@@ -1,12 +1,13 @@
 // src/components/tools/TextCaseConverter.tsx
 // Convert text between different cases
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
 import { shadows } from '../../theme';
 import { useClipboard } from '../../hooks';
+import { CopiedBadge } from '../CopiedBadge';
 
 type CaseType = 'lower' | 'upper' | 'title' | 'sentence' | 'camel' | 'snake' | 'kebab';
 
@@ -14,11 +15,24 @@ export const TextCaseConverter: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [copiedType, setCopiedType] = useState<CaseType | null>(null);
     const { copyToClipboard } = useClipboard();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleCopy = async (text: string, type: CaseType) => {
         await copyToClipboard(text);
         setCopiedType(type);
-        setTimeout(() => setCopiedType(null), 1500);
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopiedType(null), 1500);
     };
 
     const convertCase = useCallback((text: string, type: CaseType): string => {
@@ -86,11 +100,7 @@ export const TextCaseConverter: React.FC = () => {
                             onPress={() => handleCopy(result, c.type)}
                             activeOpacity={0.7}
                         >
-                            {copiedType === c.type && (
-                                <View style={styles.copiedBadge}>
-                                    <Text style={styles.copiedText}>Copied!</Text>
-                                </View>
-                            )}
+                            {copiedType === c.type && <CopiedBadge size="small" />}
                             <Text style={styles.resultLabel}>{c.label}</Text>
                             <Text style={styles.resultValue}>{result}</Text>
                         </TouchableOpacity>
@@ -151,21 +161,5 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'right',
         marginLeft: 12,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

@@ -20,10 +20,7 @@ import { useClipboard } from '../hooks';
 import { colors } from '../theme/colors';
 import { fontFamily, getDynamicFontSize } from '../theme/typography';
 import { shadows } from '../theme';
-import { PickerModal } from '../components/PickerModal';
-import { PickerButton } from '../components/PickerButton';
-import { AnimatedPressable } from '../components/AnimatedPressable';
-import { MarqueeInput } from '../components/MarqueeInput';
+import { PickerModal, PickerButton, AnimatedPressable, MarqueeInput, CopiedBadge } from '../components';
 
 enum Category {
     LENGTH = 'Length',
@@ -255,11 +252,7 @@ export const ConverterScreen: React.FC = () => {
                     onPress={() => copyToClipboard(result)}
                     activeOpacity={0.7}
                 >
-                    {copied && (
-                        <View style={styles.copiedBadge}>
-                            <Text style={styles.copiedText}>Copied!</Text>
-                        </View>
-                    )}
+                    {copied && <CopiedBadge />}
                     <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
                     <Text style={styles.resultUnit}>{toUnitLabel}</Text>
                 </TouchableOpacity>
@@ -398,20 +391,5 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: colors.secondary,
         fontWeight: '500',
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '600',
     },
 });

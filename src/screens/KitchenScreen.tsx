@@ -28,6 +28,7 @@ import {
 import { useClipboard, useSafeTimeout, useMounted } from '../hooks';
 import { API_ENDPOINTS, fetchWithTimeout } from '../config';
 import { MarqueeInput } from '../components/MarqueeInput';
+import { CopiedBadge } from '../components/CopiedBadge';
 
 type KitchenTab = 'ingredients' | 'oven' | 'special';
 
@@ -338,11 +339,7 @@ export const KitchenScreen: React.FC = () => {
                 onPress={() => copyToClipboard(result)}
                 activeOpacity={0.7}
             >
-                {copied && (
-                    <View style={styles.copiedBadge}>
-                        <Text style={styles.copiedText}>Copied!</Text>
-                    </View>
-                )}
+                {copied && <CopiedBadge />}
                 <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
                 <Text style={styles.resultUnit}>
                     {KITCHEN_UNITS.find(u => u.id === toUnitId)?.label}
@@ -827,22 +824,6 @@ const styles = StyleSheet.create({
     ovenResultCard: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 4, ...shadows.card },
     ovenResultLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
     ovenResultValue: { fontSize: 28, fontWeight: '600', color: colors.primary, marginTop: 4 },
-    copiedBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '600',
-    },
-
     // Toast styles
     toast: {
         position: 'absolute',

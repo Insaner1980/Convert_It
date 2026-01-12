@@ -22,6 +22,7 @@ import { shadows } from '../theme';
 import { PickerButton } from '../components/PickerButton';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { CopiedBadge } from '../components/CopiedBadge';
 import { useClipboard, useSafeTimeout, useMounted } from '../hooks';
 import { API_ENDPOINTS, fetchWithTimeout } from '../config';
 
@@ -410,11 +411,7 @@ export const CurrencyScreen: React.FC = () => {
                             onPress={() => copyToClipboard(`${toCurrencyData.symbol}${result}`)}
                             activeOpacity={0.7}
                         >
-                            {copied && (
-                                <View style={styles.copiedBadge}>
-                                    <Text style={styles.copiedText}>Copied!</Text>
-                                </View>
-                            )}
+                            {copied && <CopiedBadge />}
                             <View style={styles.resultRow}>
                                 <Text style={styles.resultSymbol}>{toCurrencyData.symbol}</Text>
                                 <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
@@ -571,18 +568,6 @@ const styles = StyleSheet.create({
     resultCurrency: { fontSize: 16, color: colors.secondary },
     rateInfo: { alignItems: 'center', padding: 16 },
     rateText: { fontSize: 14, color: colors.secondary },
-    copiedBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        ...shadows.glow,
-    },
-    copiedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
-
     // Modal styles
     modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
     modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%' },

@@ -1,13 +1,14 @@
 // src/components/tools/FractionDecimalConverter.tsx
 // Convert between fractions and decimals
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily, getDynamicFontSize } from '../../theme/typography';
 import { shadows } from '../../theme';
 import { useClipboard } from '../../hooks';
 import { MarqueeInput } from '../MarqueeInput';
+import { CopiedBadge } from '../CopiedBadge';
 
 type Mode = 'toDecimal' | 'toFraction';
 
@@ -56,11 +57,24 @@ export const FractionDecimalConverter: React.FC = () => {
     const [decimalInput, setDecimalInput] = useState('');
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const { copyToClipboard } = useClipboard();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleCopy = async (text: string, field: string) => {
         await copyToClipboard(text);
         setCopiedField(field);
-        setTimeout(() => setCopiedField(null), 1500);
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopiedField(null), 1500);
     };
 
     // Helper function to convert improper fraction to mixed number
@@ -161,11 +175,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                 onPress={() => handleCopy(result.decimal || '', 'decimal')}
                                 activeOpacity={0.7}
                             >
-                                {copiedField === 'decimal' && (
-                                    <View style={styles.copiedBadge}>
-                                        <Text style={styles.copiedText}>Copied!</Text>
-                                    </View>
-                                )}
+                                {copiedField === 'decimal' && <CopiedBadge size="small" />}
                                 <Text style={styles.resultLabel}>DECIMAL</Text>
                                 <Text style={[styles.resultValueLarge, { fontSize: getDynamicFontSize(result.decimal || '', 36) }]}>{result.decimal}</Text>
                             </TouchableOpacity>
@@ -174,11 +184,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                 onPress={() => handleCopy(result.percentage || '', 'percentage')}
                                 activeOpacity={0.7}
                             >
-                                {copiedField === 'percentage' && (
-                                    <View style={styles.copiedBadge}>
-                                        <Text style={styles.copiedText}>Copied!</Text>
-                                    </View>
-                                )}
+                                {copiedField === 'percentage' && <CopiedBadge size="small" />}
                                 <Text style={styles.resultLabel}>PERCENTAGE</Text>
                                 <Text style={styles.resultValue}>{result.percentage}</Text>
                             </TouchableOpacity>
@@ -209,11 +215,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                 onPress={() => handleCopy(result.fraction || '', 'fraction')}
                                 activeOpacity={0.7}
                             >
-                                {copiedField === 'fraction' && (
-                                    <View style={styles.copiedBadge}>
-                                        <Text style={styles.copiedText}>Copied!</Text>
-                                    </View>
-                                )}
+                                {copiedField === 'fraction' && <CopiedBadge size="small" />}
                                 <Text style={styles.resultLabel}>FRACTION</Text>
                                 <Text style={[styles.resultValueLarge, { fontSize: getDynamicFontSize(result.fraction || '', 36) }]}>{result.fraction}</Text>
                             </TouchableOpacity>
@@ -223,11 +225,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                     onPress={() => handleCopy(result.mixed!, 'mixed')}
                                     activeOpacity={0.7}
                                 >
-                                    {copiedField === 'mixed' && (
-                                        <View style={styles.copiedBadge}>
-                                            <Text style={styles.copiedText}>Copied!</Text>
-                                        </View>
-                                    )}
+                                    {copiedField === 'mixed' && <CopiedBadge size="small" />}
                                     <Text style={styles.resultLabel}>MIXED NUMBER</Text>
                                     <Text style={styles.resultValue}>{result.mixed}</Text>
                                 </TouchableOpacity>
@@ -353,21 +351,5 @@ const styles = StyleSheet.create({
         fontSize: 36,
         fontWeight: '600',
         color: colors.primary,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

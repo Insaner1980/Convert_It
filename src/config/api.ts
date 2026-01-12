@@ -1,19 +1,19 @@
 // src/config/api.ts
-// API configuration - Move these to environment variables in production
-// For Expo, use app.config.js with process.env or expo-constants
+// API configuration using expo-constants for secure key management
 
-// WARNING: In production, these should come from environment variables
-// Example with expo-constants:
-// import Constants from 'expo-constants';
-// export const EXCHANGE_RATE_API_KEY = Constants.expoConfig?.extra?.exchangeRateApiKey;
+import Constants from 'expo-constants';
+
+// API keys loaded from app.config.js extra field
+// Set environment variables for production: EXCHANGE_RATE_API_KEY=xxx USDA_API_KEY=xxx expo start
+const extra = Constants.expoConfig?.extra ?? {};
 
 export const API_CONFIG = {
     // ExchangeRate-API - Get your key at: https://www.exchangerate-api.com/
-    EXCHANGE_RATE_API_KEY: '3c0edc65cf16a8ca8c3e5a41',
+    EXCHANGE_RATE_API_KEY: extra.exchangeRateApiKey as string,
     EXCHANGE_RATE_BASE_URL: 'https://v6.exchangerate-api.com/v6',
 
     // USDA FoodData Central - Get your key at: https://fdc.nal.usda.gov/api-key-signup.html
-    USDA_API_KEY: 'sB18vYGMnhcTSZhVkJRgM4NhGduy9jgAs9luiKbE',
+    USDA_API_KEY: extra.usdaApiKey as string,
     USDA_BASE_URL: 'https://api.nal.usda.gov/fdc/v1',
 
     // Open-Meteo Geocoding (no key required)

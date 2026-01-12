@@ -11,9 +11,10 @@ import {
     Pressable,
     StyleSheet,
 } from 'react-native';
-import { X, Check, Plus } from 'lucide-react-native';
+import { Check, Plus } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { shadows } from '../theme';
+import { ModalHeader } from './ModalHeader';
 
 export interface PickerOption {
     label: string;
@@ -48,12 +49,7 @@ export const PickerModal: React.FC<PickerModalProps> = ({
         >
             <Pressable style={styles.modalOverlay} onPress={onClose}>
                 <View style={styles.modalContent}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>{title}</Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <X size={24} color={colors.secondary} />
-                        </TouchableOpacity>
-                    </View>
+                    <ModalHeader title={title} onClose={onClose} />
                     <FlatList
                         data={options}
                         keyExtractor={(item) => item.value}
@@ -104,19 +100,6 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '60%',
-    },
-    modalHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.subtle,
-    },
-    modalTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.primary,
     },
     modalOption: {
         flexDirection: 'row',

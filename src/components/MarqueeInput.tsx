@@ -10,7 +10,7 @@ import {
     TextStyle,
 } from 'react-native';
 import { colors } from '../theme/colors';
-import { fontFamily } from '../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../theme/typography';
 
 interface MarqueeInputProps extends Omit<TextInputProps, 'style'> {
     containerStyle?: ViewStyle;
@@ -19,31 +19,6 @@ interface MarqueeInputProps extends Omit<TextInputProps, 'style'> {
     /** Use more aggressive font scaling for narrow containers */
     compactMode?: boolean;
 }
-
-/**
- * Calculate font size based on text length and container
- * @param text - The text to measure
- * @param baseSize - Base font size
- * @param compact - Use more aggressive scaling for narrow containers
- */
-const getDynamicFontSize = (text: string, baseSize: number, compact: boolean = false): number => {
-    const len = text.length;
-
-    if (compact) {
-        // Aggressive scaling for narrow containers (like fraction inputs)
-        if (len > 10) return Math.max(baseSize * 0.35, 14);
-        if (len > 8) return Math.max(baseSize * 0.45, 16);
-        if (len > 6) return Math.max(baseSize * 0.55, 18);
-        if (len > 4) return Math.max(baseSize * 0.7, 22);
-        return baseSize;
-    }
-
-    // Normal scaling for full-width inputs
-    if (len > 20) return Math.max(baseSize * 0.4, 14);
-    if (len > 16) return Math.max(baseSize * 0.5, 16);
-    if (len > 12) return Math.max(baseSize * 0.65, 20);
-    return baseSize;
-};
 
 export const MarqueeInput: React.FC<MarqueeInputProps> = ({
     containerStyle,
@@ -61,12 +36,8 @@ export const MarqueeInput: React.FC<MarqueeInputProps> = ({
             value={value}
             style={[
                 styles.input,
-                {
-                    fontSize: dynamicSize,
-                    fontFamily,
-                    fontWeight: '300',
-                    color: colors.primary,
-                },
+                styles.baseText,
+                { fontSize: dynamicSize },
                 inputStyle,
                 containerStyle,
             ]}
@@ -81,5 +52,10 @@ const styles = StyleSheet.create({
         padding: 0,
         margin: 0,
         width: '100%',
+    },
+    baseText: {
+        fontFamily,
+        fontWeight: '300',
+        color: colors.primary,
     },
 });

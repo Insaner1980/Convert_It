@@ -8,6 +8,7 @@ import { fontFamily } from '../../theme/typography';
 import { shadows } from '../../theme';
 import { useClipboard } from '../../hooks';
 import { MarqueeInput } from '../MarqueeInput';
+import { CopiedBadge } from '../CopiedBadge';
 
 type Mode = 'breakdown' | 'add' | 'diff';
 
@@ -217,11 +218,7 @@ export const DurationCalculator: React.FC = () => {
                         }}
                         activeOpacity={0.7}
                     >
-                        {copied && (
-                            <View style={styles.copiedBadge}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copied && <CopiedBadge />}
                         <Text style={styles.resultLabel}>
                             {mode === 'add' ? 'TOTAL' : 'DIFFERENCE'}
                         </Text>
@@ -385,21 +382,5 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 12,
         color: colors.secondary,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 12,
-        right: 12,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 12,
-        fontWeight: '600',
     },
 });

@@ -45,6 +45,7 @@ import {
 } from '../components/tools';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { MarqueeInput } from '../components/MarqueeInput';
+import { CopiedBadge } from '../components/CopiedBadge';
 
 type ToolTab = 'colors' | 'text' | 'numbers' | 'data' | 'time';
 
@@ -461,11 +462,7 @@ const ColorConverter: React.FC = () => {
                 onPress={() => copyToClipboard(hex)}
                 style={[styles.colorPreview, { backgroundColor: `rgb(${r},${g},${b})` }]}
             >
-                {copied && (
-                    <View style={styles.copiedBadge}>
-                        <Text style={styles.copiedText}>Copied!</Text>
-                    </View>
-                )}
+                {copied && <CopiedBadge />}
             </TouchableOpacity>
 
             <View style={styles.colorValuesRow}>
@@ -616,7 +613,7 @@ const DataConverter: React.FC = () => {
                 </View>
             </View>
             <TouchableOpacity style={styles.resultContainer} onPress={() => copyToClipboard(result)} activeOpacity={0.7}>
-                {copied && <View style={styles.copiedBadge}><Text style={styles.copiedText}>Copied!</Text></View>}
+                {copied && <CopiedBadge />}
                 <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result, 40) }]}>{result}</Text>
                 <Text style={styles.resultUnit}>{DATA_UNITS.find(u => u.id === toUnit)?.label}</Text>
             </TouchableOpacity>
@@ -1112,8 +1109,6 @@ const styles = StyleSheet.create({
 
     // Other existing styles
     colorPreview: { height: 160, borderRadius: 24, justifyContent: 'center', alignItems: 'center', ...shadows.card },
-    copiedBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, zIndex: 1, ...shadows.glow },
-    copiedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
     colorValuesRow: { flexDirection: 'row', gap: 16 },
     colorValueCard: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 4, ...shadows.card },
     colorValueLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },

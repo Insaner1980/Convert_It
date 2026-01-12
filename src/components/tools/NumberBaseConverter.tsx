@@ -1,13 +1,14 @@
 // src/components/tools/NumberBaseConverter.tsx
 // Convert between decimal, binary, octal, and hexadecimal
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
 import { shadows } from '../../theme';
 import { useClipboard } from '../../hooks';
 import { MarqueeInput } from '../MarqueeInput';
+import { CopiedBadge } from '../CopiedBadge';
 
 type Base = 2 | 8 | 10 | 16;
 type CopiedBase = Base | null;
@@ -24,11 +25,24 @@ export const NumberBaseConverter: React.FC = () => {
     const [inputValue, setInputValue] = useState('');
     const [copiedBase, setCopiedBase] = useState<CopiedBase>(null);
     const { copyToClipboard } = useClipboard();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleCopy = async (text: string, base: Base) => {
         await copyToClipboard(text);
         setCopiedBase(base);
-        setTimeout(() => setCopiedBase(null), 1500);
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopiedBase(null), 1500);
     };
 
     const conversions = useMemo(() => {
@@ -119,11 +133,7 @@ export const NumberBaseConverter: React.FC = () => {
                             onPress={() => handleCopy(value, base.id)}
                             activeOpacity={0.7}
                         >
-                            {copiedBase === base.id && (
-                                <View style={styles.copiedBadge}>
-                                    <Text style={styles.copiedText}>Copied!</Text>
-                                </View>
-                            )}
+                            {copiedBase === base.id && <CopiedBadge size="small" />}
                             <Text style={styles.resultLabel}>{base.label}</Text>
                             <Text style={styles.resultValue}>{value}</Text>
                         </TouchableOpacity>
@@ -209,21 +219,5 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: 'right',
         marginLeft: 12,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

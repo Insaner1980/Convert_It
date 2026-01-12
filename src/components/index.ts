@@ -13,3 +13,6 @@ export { AnimatedSplash } from './AnimatedSplash';
 export { StreamlinedArrow } from './StreamlinedArrow';
 export { AppLogo } from './AppLogo';
 export { ErrorBoundary } from './ErrorBoundary';
+export { CopiedBadge } from './CopiedBadge';
+export { ModalHeader } from './ModalHeader';
+export { Toast } from './Toast';

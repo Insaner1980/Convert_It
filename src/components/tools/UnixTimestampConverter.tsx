@@ -1,7 +1,7 @@
 // src/components/tools/UnixTimestampConverter.tsx
 // Convert between Unix timestamp and human-readable date
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
@@ -9,17 +9,31 @@ import { shadows } from '../../theme';
 import { AnimatedPressable } from '../AnimatedPressable';
 import { useClipboard } from '../../hooks';
 import { MarqueeInput } from '../MarqueeInput';
+import { CopiedBadge } from '../CopiedBadge';
 
 export const UnixTimestampConverter: React.FC = () => {
     const [timestamp, setTimestamp] = useState('');
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const { copyToClipboard } = useClipboard();
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const handleCopy = async (text: string, field: string) => {
         await copyToClipboard(text);
         setCopiedField(field);
-        setTimeout(() => setCopiedField(null), 1500);
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => setCopiedField(null), 1500);
     };
 
     // Update current time every second
@@ -83,11 +97,7 @@ export const UnixTimestampConverter: React.FC = () => {
                 onPress={() => handleCopy(currentUnix.toString(), 'current')}
                 activeOpacity={0.7}
             >
-                {copiedField === 'current' && (
-                    <View style={styles.copiedBadge}>
-                        <Text style={styles.copiedText}>Copied!</Text>
-                    </View>
-                )}
+                {copiedField === 'current' && <CopiedBadge />}
                 <Text style={styles.currentLabel}>CURRENT UNIX TIME</Text>
                 <Text style={styles.currentValue}>{currentUnix}</Text>
             </TouchableOpacity>
@@ -118,11 +128,7 @@ export const UnixTimestampConverter: React.FC = () => {
                         onPress={() => handleCopy(parseResult.local, 'local')}
                         activeOpacity={0.7}
                     >
-                        {copiedField === 'local' && (
-                            <View style={styles.copiedBadgeSmall}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copiedField === 'local' && <CopiedBadge size="small" />}
                         <Text style={styles.resultLabel}>LOCAL</Text>
                         <Text style={styles.resultValue}>{parseResult.local}</Text>
                     </TouchableOpacity>
@@ -131,11 +137,7 @@ export const UnixTimestampConverter: React.FC = () => {
                         onPress={() => handleCopy(parseResult.utc, 'utc')}
                         activeOpacity={0.7}
                     >
-                        {copiedField === 'utc' && (
-                            <View style={styles.copiedBadgeSmall}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copiedField === 'utc' && <CopiedBadge size="small" />}
                         <Text style={styles.resultLabel}>UTC</Text>
                         <Text style={styles.resultValue}>{parseResult.utc}</Text>
                     </TouchableOpacity>
@@ -144,11 +146,7 @@ export const UnixTimestampConverter: React.FC = () => {
                         onPress={() => handleCopy(parseResult.iso, 'iso')}
                         activeOpacity={0.7}
                     >
-                        {copiedField === 'iso' && (
-                            <View style={styles.copiedBadgeSmall}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copiedField === 'iso' && <CopiedBadge size="small" />}
                         <Text style={styles.resultLabel}>ISO 8601</Text>
                         <Text style={styles.resultValue}>{parseResult.iso}</Text>
                     </TouchableOpacity>
@@ -157,11 +155,7 @@ export const UnixTimestampConverter: React.FC = () => {
                         onPress={() => handleCopy(parseResult.relative, 'relative')}
                         activeOpacity={0.7}
                     >
-                        {copiedField === 'relative' && (
-                            <View style={styles.copiedBadgeSmall}>
-                                <Text style={styles.copiedText}>Copied!</Text>
-                            </View>
-                        )}
+                        {copiedField === 'relative' && <CopiedBadge size="small" />}
                         <Text style={styles.resultLabel}>RELATIVE</Text>
                         <Text style={styles.resultValue}>{parseResult.relative}</Text>
                     </TouchableOpacity>
@@ -252,32 +246,5 @@ const styles = StyleSheet.create({
         fontFamily,
         fontSize: 14,
         color: colors.primary,
-    },
-    copiedBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        backgroundColor: colors.card,
-        paddingHorizontal: 12,
-        paddingVertical: 4,
-        borderRadius: 12,
-        zIndex: 1,
-        ...shadows.card,
-    },
-    copiedBadgeSmall: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 8,
-        zIndex: 1,
-        ...shadows.glow,
-    },
-    copiedText: {
-        color: colors.primary,
-        fontSize: 10,
-        fontWeight: '600',
     },
 });

@@ -102,14 +102,27 @@ export const textStyles = {
 
 /**
  * Get dynamic font size based on text length
- * Ensures long numbers (like 0.000002204) fit in the display
+ * Ensures long numbers fit in the display without overflow
  * @param text - The text/number to display
  * @param baseSize - Default font size for short text (default: 48)
+ * @param compact - Use aggressive scaling for narrow containers (default: false)
  * @returns Appropriate font size
  */
-export const getDynamicFontSize = (text: string, baseSize: number = 48): number => {
-    const length = text.length;
-    if (length > 15) return Math.min(baseSize, 20);
-    if (length > 10) return Math.min(baseSize, 28);
+export const getDynamicFontSize = (text: string, baseSize: number = 48, compact: boolean = false): number => {
+    const len = text.length;
+
+    if (compact) {
+        // Aggressive scaling for narrow containers (like fraction inputs)
+        if (len > 10) return Math.max(baseSize * 0.35, 14);
+        if (len > 8) return Math.max(baseSize * 0.45, 16);
+        if (len > 6) return Math.max(baseSize * 0.55, 18);
+        if (len > 4) return Math.max(baseSize * 0.7, 22);
+        return baseSize;
+    }
+
+    // Normal scaling for full-width inputs and result displays
+    if (len > 20) return Math.max(baseSize * 0.4, 14);
+    if (len > 16) return Math.max(baseSize * 0.5, 16);
+    if (len > 12) return Math.max(baseSize * 0.65, 20);
     return baseSize;
 };
