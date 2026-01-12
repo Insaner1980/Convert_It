@@ -1,14 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
-    TextInput,
     ScrollView,
     StyleSheet,
     TouchableOpacity,
-    Image,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
     useSharedValue,
@@ -19,14 +16,14 @@ import Animated, {
 import { ArrowLeftRight } from 'lucide-react-native';
 
 import { LENGTH_UNITS, WEIGHT_UNITS, TEMPERATURE_UNITS, SPEED_UNITS } from '../constants';
+import { useClipboard } from '../hooks';
 import { colors } from '../theme/colors';
-import { fontFamily } from '../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../theme/typography';
+import { shadows } from '../theme';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-
-// Logo
-const logo = require('../../assets/adaptive-icon.png');
+import { MarqueeInput } from '../components/MarqueeInput';
 
 enum Category {
     LENGTH = 'Length',
@@ -35,8 +32,53 @@ enum Category {
     SPEED = 'Speed',
 }
 
+// Extracted to module scope to prevent re-creation on each render
+interface CategoryButtonProps {
+    cat: Category;
+    isActive: boolean;
+    onPress: () => void;
+}
+
+const CategoryButton: React.FC<CategoryButtonProps> = ({ cat, isActive, onPress }) => {
+    const progress = useSharedValue(isActive ? 1 : 0);
+
+    useEffect(() => {
+        progress.value = withTiming(isActive ? 1 : 0, { duration: 200 });
+    }, [isActive, progress]);
+
+    const animatedBgStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            progress.value,
+            [0, 1],
+            ['transparent', colors.accent]
+        ),
+    }));
+
+    const animatedTextStyle = useAnimatedStyle(() => ({
+        color: interpolateColor(
+            progress.value,
+            [0, 1],
+            [colors.secondary, colors.primary]
+        ),
+    }));
+
+    return (
+        <AnimatedPressable
+            onPress={onPress}
+            style={[styles.categoryButton]}
+        >
+            <Animated.View style={[styles.categoryButtonInner, animatedBgStyle]}>
+                <Animated.Text style={[styles.categoryButtonText, animatedTextStyle]}>
+                    {cat}
+                </Animated.Text>
+            </Animated.View>
+        </AnimatedPressable>
+    );
+};
+
 export const ConverterScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
+    const { copied, copyToClipboard } = useClipboard();
     const [category, setCategory] = useState<Category>(Category.LENGTH);
     const [value, setValue] = useState<string>('1');
     const [fromUnit, setFromUnit] = useState<string>('');
@@ -45,13 +87,6 @@ export const ConverterScreen: React.FC = () => {
     // Modal states
     const [fromModalVisible, setFromModalVisible] = useState(false);
     const [toModalVisible, setToModalVisible] = useState(false);
-    const [copied, setCopied] = useState(false);
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
 
     const units = useMemo(() => {
         switch (category) {
@@ -102,8 +137,14 @@ export const ConverterScreen: React.FC = () => {
         const baseValue = val * from.factor;
         const finalValue = baseValue / to.factor;
 
-        if (finalValue < 0.0001 && finalValue > 0) return finalValue.toExponential(4);
-        if (finalValue > 1e12) return finalValue.toExponential(4);
+        // Format with locale string (spaces as thousand separators)
+        // For very small numbers, show more decimals
+        if (finalValue < 0.0001 && finalValue > 0) {
+            return finalValue.toLocaleString('en-US', {
+                maximumFractionDigits: 10,
+                minimumFractionDigits: 0,
+            });
+        }
 
         return finalValue.toLocaleString('en-US', {
             maximumFractionDigits: 6,
@@ -111,61 +152,36 @@ export const ConverterScreen: React.FC = () => {
         });
     }, [value, fromUnit, toUnit, units, category]);
 
-    const handleSwap = () => {
+    const handleSwap = useCallback(() => {
         setFromUnit(toUnit);
         setToUnit(fromUnit);
-    };
+    }, [fromUnit, toUnit]);
 
-    // Animated category button with color transition
-    const CategoryButton = ({ cat, isActive }: { cat: Category; isActive: boolean }) => {
-        const progress = useSharedValue(isActive ? 1 : 0);
+    const handleCategoryChange = useCallback((cat: Category) => {
+        setCategory(cat);
+    }, []);
 
-        useEffect(() => {
-            progress.value = withTiming(isActive ? 1 : 0, { duration: 200 });
-        }, [isActive, progress]);
+    // Memoized unit options to prevent unnecessary re-renders
+    const unitOptions = useMemo(() =>
+        units.map(u => ({ label: u.label, value: u.id })),
+        [units]
+    );
 
-        const animatedBgStyle = useAnimatedStyle(() => ({
-            backgroundColor: interpolateColor(
-                progress.value,
-                [0, 1],
-                ['transparent', colors.accent]
-            ),
-        }));
+    const fromUnitLabel = useMemo(() =>
+        units.find(u => u.id === fromUnit)?.label || 'Select',
+        [units, fromUnit]
+    );
 
-        const animatedTextStyle = useAnimatedStyle(() => ({
-            color: interpolateColor(
-                progress.value,
-                [0, 1],
-                [colors.secondary, colors.primary]
-            ),
-        }));
-
-        return (
-            <AnimatedPressable
-                onPress={() => setCategory(cat)}
-                style={[styles.categoryButton]}
-            >
-                <Animated.View style={[styles.categoryButtonInner, animatedBgStyle]}>
-                    <Animated.Text style={[styles.categoryButtonText, animatedTextStyle]}>
-                        {cat}
-                    </Animated.Text>
-                </Animated.View>
-            </AnimatedPressable>
-        );
-    };
-
-    const unitOptions = units.map(u => ({ label: u.label, value: u.id }));
-    const fromUnitLabel = units.find(u => u.id === fromUnit)?.label || 'Select';
-    const toUnitLabel = units.find(u => u.id === toUnit)?.label || 'Select';
+    const toUnitLabel = useMemo(() =>
+        units.find(u => u.id === toUnit)?.label || 'Select',
+        [units, toUnit]
+    );
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <Image source={logo} style={styles.headerLogo} resizeMode="contain" />
-                    <Text style={styles.headerTitle}>UnitX</Text>
-                </View>
+                <Text style={styles.headerTitle}>Convert</Text>
             </View>
 
             <ScrollView
@@ -183,6 +199,7 @@ export const ConverterScreen: React.FC = () => {
                             key={cat}
                             cat={cat}
                             isActive={category === cat}
+                            onPress={() => handleCategoryChange(cat)}
                         />
                     ))}
                 </View>
@@ -190,13 +207,15 @@ export const ConverterScreen: React.FC = () => {
                 {/* Input Section */}
                 <View style={styles.inputSection}>
                     <Text style={styles.inputLabel}>Input Amount</Text>
-                    <TextInput
-                        style={styles.inputField}
+                    <MarqueeInput
+                        containerStyle={styles.inputContainer}
+                        inputStyle={styles.inputFieldStyle}
+                        fontSize={48}
                         value={value}
                         onChangeText={setValue}
                         keyboardType="numeric"
                         placeholder="0"
-                        placeholderTextColor={colors.secondary}
+                        maxLength={15}
                     />
                 </View>
 
@@ -241,7 +260,7 @@ export const ConverterScreen: React.FC = () => {
                             <Text style={styles.copiedText}>Copied!</Text>
                         </View>
                     )}
-                    <Text style={styles.resultValue}>{result}</Text>
+                    <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
                     <Text style={styles.resultUnit}>{toUnitLabel}</Text>
                 </TouchableOpacity>
             </ScrollView>
@@ -273,20 +292,8 @@ const styles = StyleSheet.create({
         backgroundColor: colors.main,
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 16,
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    headerLogo: {
-        width: 36,
-        height: 36,
     },
     headerTitle: {
         fontFamily,
@@ -304,42 +311,44 @@ const styles = StyleSheet.create({
     },
     categoryContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     categoryButton: {
-        flex: 1,
+        flexGrow: 1,
     },
     categoryButtonInner: {
         paddingVertical: 14,
+        paddingHorizontal: 8,
         alignItems: 'center',
         borderRadius: 12,
     },
     categoryButtonText: {
         fontSize: 13,
-        fontWeight: '500',
+        fontWeight: '600',
         color: colors.secondary,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        gap: 8,
+        padding: 20,
+        ...shadows.card,
     },
     inputLabel: {
-        fontSize: 14,
-        fontWeight: '500',
+        fontSize: 12,
+        fontWeight: '600',
         color: colors.secondary,
+        letterSpacing: 0.5,
+        textTransform: 'uppercase',
     },
-    inputField: {
-        fontSize: 48,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 60,
+    },
+    inputFieldStyle: {
+        textAlign: 'right',
     },
     unitsContainer: {
         gap: 12,
@@ -362,10 +371,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 24,
-        backgroundColor: colors.input,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
         alignSelf: 'center',
+        ...shadows.button,
     },
     swapButtonText: {
         fontSize: 14,
@@ -373,13 +381,12 @@ const styles = StyleSheet.create({
         color: colors.accent,
     },
     resultContainer: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 24,
         alignItems: 'center',
         gap: 8,
+        ...shadows.card,
     },
     resultValue: {
         fontSize: 48,
@@ -388,20 +395,22 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     resultUnit: {
-        fontSize: 18,
+        fontSize: 16,
         color: colors.secondary,
+        fontWeight: '500',
     },
     copiedBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 12,
+        right: 12,
         backgroundColor: colors.accent,
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 12,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 12,
         fontWeight: '600',
     },

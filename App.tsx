@@ -7,7 +7,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet } from 'react-native';
 import {
-  ArrowLeftRight,
   Tag,
   ChefHat,
   Banknote,
@@ -26,6 +25,7 @@ import { ToolsScreen } from './src/screens/ToolsScreen';
 
 // Import components
 import { AnimatedSplash } from './src/components/AnimatedSplash';
+import { ErrorBoundary, AppLogo } from './src/components';
 
 import { colors } from './src/theme/colors';
 
@@ -39,12 +39,16 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.card, // #0f0f0f per UI_SPEC.md
-          borderTopColor: colors.subtle,
-          borderTopWidth: 0.5,
+          backgroundColor: colors.card,
+          borderTopWidth: 0,
           paddingTop: 12,
           paddingBottom: Math.max(insets.bottom, 16),
           height: 70 + Math.max(insets.bottom, 16),
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 12,
+          elevation: 10,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.secondary,
@@ -58,7 +62,7 @@ function TabNavigator() {
 
           switch (route.name) {
             case 'Convert':
-              return <ArrowLeftRight {...iconProps} />;
+              return <AppLogo size={28} color={color} />;
             case 'Sizes':
               return <Tag {...iconProps} />;
             case 'Kitchen':
@@ -102,33 +106,35 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <NavigationContainer
-          theme={{
-            dark: true,
-            colors: {
-              primary: colors.accent,
-              background: colors.main,
-              card: colors.card, // #0f0f0f for tab bar
-              text: colors.primary,
-              border: colors.subtle,
-              notification: colors.accent,
-            },
-            fonts: {
-              regular: { fontFamily: 'monospace', fontWeight: '400' },
-              medium: { fontFamily: 'monospace', fontWeight: '500' },
-              bold: { fontFamily: 'monospace', fontWeight: '700' },
-              heavy: { fontFamily: 'monospace', fontWeight: '900' },
-            },
-          }}
-        >
-          <TabNavigator />
-        </NavigationContainer>
-        <StatusBar style="light" />
-        {!splashAnimationComplete && (
-          <AnimatedSplash onComplete={handleSplashComplete} />
-        )}
-      </SafeAreaProvider>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <NavigationContainer
+            theme={{
+              dark: true,
+              colors: {
+                primary: colors.accent,
+                background: colors.main,
+                card: colors.card, // #0f0f0f for tab bar
+                text: colors.primary,
+                border: colors.subtle,
+                notification: colors.accent,
+              },
+              fonts: {
+                regular: { fontFamily: 'monospace', fontWeight: '400' },
+                medium: { fontFamily: 'monospace', fontWeight: '500' },
+                bold: { fontFamily: 'monospace', fontWeight: '700' },
+                heavy: { fontFamily: 'monospace', fontWeight: '900' },
+              },
+            }}
+          >
+            <TabNavigator />
+          </NavigationContainer>
+          <StatusBar style="light" />
+          {!splashAnimationComplete && (
+            <AnimatedSplash onComplete={handleSplashComplete} />
+          )}
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

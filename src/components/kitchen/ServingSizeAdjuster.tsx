@@ -3,23 +3,18 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
 import { AnimatedPressable } from '../AnimatedPressable';
 import { Minus, Plus } from 'lucide-react-native';
+import { useClipboard } from '../../hooks';
 
 export const ServingSizeAdjuster: React.FC = () => {
     const [originalServings, setOriginalServings] = useState('4');
     const [newServings, setNewServings] = useState('4');
     const [ingredientAmount, setIngredientAmount] = useState('');
-    const [copied, setCopied] = useState(false);
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
+    const { copied, copyToClipboard } = useClipboard();
 
     const scaleFactor = useMemo(() => {
         const orig = parseInt(originalServings) || 1;
@@ -65,6 +60,7 @@ export const ServingSizeAdjuster: React.FC = () => {
                             keyboardType="numeric"
                             placeholder="4"
                             placeholderTextColor={colors.secondary}
+                            maxLength={4}
                         />
                         <Text style={styles.servingLabel}>servings</Text>
                     </View>
@@ -77,19 +73,20 @@ export const ServingSizeAdjuster: React.FC = () => {
                             style={styles.adjustButton}
                             onPress={() => adjustServings(-1)}
                         >
-                            <Minus size={20} color={colors.primary} />
+                            <Minus size={20} color={colors.accent} />
                         </AnimatedPressable>
                         <TextInput
                             style={styles.servingNumberLarge}
                             value={newServings}
                             onChangeText={setNewServings}
                             keyboardType="numeric"
+                            maxLength={4}
                         />
                         <AnimatedPressable
                             style={styles.adjustButton}
                             onPress={() => adjustServings(1)}
                         >
-                            <Plus size={20} color={colors.primary} />
+                            <Plus size={20} color={colors.accent} />
                         </AnimatedPressable>
                     </View>
                 </View>
@@ -128,14 +125,20 @@ export const ServingSizeAdjuster: React.FC = () => {
             <View style={styles.ingredientSection}>
                 <Text style={styles.label}>ORIGINAL AMOUNT</Text>
                 <View style={styles.ingredientRow}>
-                    <TextInput
-                        style={styles.ingredientInput}
-                        value={ingredientAmount}
-                        onChangeText={setIngredientAmount}
-                        keyboardType="numeric"
-                        placeholder="e.g. 250"
-                        placeholderTextColor={colors.secondary}
-                    />
+                    <View style={styles.inputBox}>
+                        <TextInput
+                            style={styles.ingredientInput}
+                            value={ingredientAmount}
+                            onChangeText={setIngredientAmount}
+                            keyboardType="numeric"
+                            placeholder="e.g. 250"
+                            placeholderTextColor={colors.secondary}
+                            maxLength={12}
+                            multiline
+                            numberOfLines={2}
+                            textAlignVertical="center"
+                        />
+                    </View>
                     <View style={styles.arrow}>
                         <Text style={styles.arrowText}>→</Text>
                     </View>
@@ -149,7 +152,7 @@ export const ServingSizeAdjuster: React.FC = () => {
                                 <Text style={styles.copiedText}>Copied!</Text>
                             </View>
                         )}
-                        <Text style={styles.resultValue}>{scaledAmount}</Text>
+                        <Text style={styles.resultValue} numberOfLines={2} adjustsFontSizeToFit>{scaledAmount}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -172,12 +175,11 @@ const styles = StyleSheet.create({
     },
     servingsGroup: {
         flex: 1,
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -214,11 +216,10 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: colors.card,
+        backgroundColor: colors.elevated,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.button,
     },
     servingNumberLarge: {
         fontFamily,
@@ -237,14 +238,12 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingVertical: 10,
         alignItems: 'center',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 10,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.button,
     },
     presetButtonActive: {
         backgroundColor: colors.accent,
-        borderColor: colors.accent,
     },
     presetText: {
         fontFamily,
@@ -261,6 +260,7 @@ const styles = StyleSheet.create({
         padding: 12,
         alignItems: 'center',
         gap: 4,
+        ...shadows.glow,
     },
     scaleLabel: {
         fontFamily,
@@ -277,28 +277,33 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     ingredientSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     ingredientRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
     },
-    ingredientInput: {
+    inputBox: {
         flex: 1,
+        backgroundColor: colors.input,
+        borderRadius: 8,
+        padding: 8,
+        minHeight: 60,
+        justifyContent: 'center',
+    },
+    ingredientInput: {
         fontFamily,
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '300',
         color: colors.primary,
         textAlign: 'center',
-        backgroundColor: colors.card,
-        borderRadius: 8,
-        padding: 8,
+        padding: 0,
+        margin: 0,
     },
     arrow: {
         paddingHorizontal: 8,
@@ -310,16 +315,19 @@ const styles = StyleSheet.create({
     },
     resultBox: {
         flex: 1,
-        backgroundColor: colors.card,
+        backgroundColor: colors.input,
         borderRadius: 8,
         padding: 8,
+        minHeight: 60,
+        justifyContent: 'center',
         alignItems: 'center',
     },
     resultValue: {
         fontFamily,
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '600',
         color: colors.primary,
+        textAlign: 'center',
     },
     copiedBadge: {
         position: 'absolute',
@@ -330,9 +338,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

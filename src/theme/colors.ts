@@ -1,17 +1,27 @@
 // src/theme/colors.ts
-// Premium Monochrome - Timeless, minimalist design
-// Inspired by: Linear, Arc browser, premium design tools
+// Premium Warm Dark - Sophisticated, elegant design
+// Inspired by: Premium product showcases, copper/terracotta accents
 
 export const colors = {
-    main: '#000000',      // Pure black background
-    card: '#0f0f0f',      // Very dark gray cards
-    input: '#1a1a1a',     // Slightly lighter input fields
-    subtle: '#262626',    // Subtle borders
-    primary: '#ffffff',   // Bright white text
-    secondary: '#6b6b6b', // Mid-gray secondary text
-    accent: '#A30000',    // Red accent (active states, buttons)
-    accentHover: '#7a0000', // Darker red for hover
-    overlay: 'rgba(0,0,0,0.7)', // Modal overlay background
-};
+    // Backgrounds - warm dark grays instead of pure black
+    main: '#141416',        // Main background - warm charcoal
+    card: '#1c1c1e',        // Card background - elevated surface
+    input: '#242426',       // Input fields - subtle lift
+    subtle: '#38383a',      // Borders - soft definition
 
-export type Colors = typeof colors;
+    // Text
+    primary: '#f5f5f7',     // Primary text - warm white
+    secondary: '#86868b',   // Secondary text - balanced gray
+
+    // Accent - warm copper/terracotta
+    accent: '#c9785d',      // Primary accent - warm copper
+    accentMuted: '#c9785d20', // Muted accent for backgrounds
+    accentHover: '#b56a50', // Hover state
+
+    // Utility
+    overlay: 'rgba(0,0,0,0.75)', // Modal overlay
+
+    // Additional depth colors
+    elevated: '#2c2c2e',    // Elevated surfaces
+    highlight: '#48484a',   // Highlights and focus states
+};

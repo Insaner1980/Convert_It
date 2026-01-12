@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -11,20 +11,19 @@ import {
     Pressable,
     FlatList,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { MarqueeInput } from '../components/MarqueeInput';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeftRight, RefreshCw, Plus, Search, X, Check } from 'lucide-react-native';
 
-import { CURRENCY_INFO, DEFAULT_CURRENCIES } from '../constants';
+import { CURRENCY_INFO, DEFAULT_CURRENCIES, TIMING } from '../constants';
 import { colors } from '../theme/colors';
-import { fontFamily } from '../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../theme/typography';
+import { shadows } from '../theme';
 import { PickerButton } from '../components/PickerButton';
 import { AnimatedPressable } from '../components/AnimatedPressable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-
-// ExchangeRate-API - 160+ currencies
-const EXCHANGE_RATE_API_KEY = '3c0edc65cf16a8ca8c3e5a41';
-const EXCHANGE_RATE_API = `https://v6.exchangerate-api.com/v6/${EXCHANGE_RATE_API_KEY}`;
+import { useClipboard, useSafeTimeout, useMounted } from '../hooks';
+import { API_ENDPOINTS, fetchWithTimeout } from '../config';
 
 interface ExchangeRates {
     [key: string]: number;
@@ -32,6 +31,9 @@ interface ExchangeRates {
 
 export const CurrencyScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
+    const { copied, copyToClipboard } = useClipboard();
+    const { safeSetTimeout } = useSafeTimeout();
+    const isMounted = useMounted();
     const [value, setValue] = useState<string>('100');
     const [fromCurrency, setFromCurrency] = useState('EUR');
     const [toCurrency, setToCurrency] = useState('USD');
@@ -40,7 +42,6 @@ export const CurrencyScreen: React.FC = () => {
     const [toModalVisible, setToModalVisible] = useState(false);
     const [searchModalVisible, setSearchModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [copied, setCopied] = useState(false);
     const [addedCurrency, setAddedCurrency] = useState<string | null>(null);
 
     // Favorite currencies (user's selected currencies)
@@ -63,16 +64,16 @@ export const CurrencyScreen: React.FC = () => {
     // Toast notification state
     const [toast, setToast] = useState<string | null>(null);
 
-    const showToast = (message: string) => {
+    const showToast = useCallback((message: string) => {
         setToast(message);
-        setTimeout(() => setToast(null), 2500);
-    };
+        safeSetTimeout(() => setToast(null), TIMING.TOAST_DURATION);
+    }, [safeSetTimeout]);
 
     const fetchRates = async (base: string = 'EUR') => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${EXCHANGE_RATE_API}/latest/${base}`);
+            const response = await fetchWithTimeout(API_ENDPOINTS.exchangeRates(base));
             if (!response.ok) throw new Error('Failed to fetch rates');
             const data = await response.json();
 
@@ -80,13 +81,14 @@ export const CurrencyScreen: React.FC = () => {
                 throw new Error(data['error-type'] || 'API error');
             }
 
+            if (!isMounted.current) return;
             setRates(data.conversion_rates);
             setBaseCurrency(base);
             const updateDate = new Date(data.time_last_update_utc);
             setLastUpdated(updateDate.toLocaleDateString('en-CA'));
-        } catch (err) {
+        } catch {
+            if (!isMounted.current) return;
             setError('Could not load exchange rates');
-            console.error('Currency fetch error:', err);
         } finally {
             setLoading(false);
         }
@@ -94,13 +96,8 @@ export const CurrencyScreen: React.FC = () => {
 
     useEffect(() => {
         fetchRates('EUR');
-    }, []);
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Intentionally run only once on mount
 
     const result = useMemo(() => {
         const val = parseFloat(value);
@@ -128,23 +125,23 @@ export const CurrencyScreen: React.FC = () => {
         return (toRate / fromRate).toFixed(4);
     }, [fromCurrency, toCurrency, rates]);
 
-    const handleSwap = () => {
+    const handleSwap = useCallback(() => {
         setFromCurrency(toCurrency);
         setToCurrency(fromCurrency);
-    };
+    }, [fromCurrency, toCurrency]);
 
-    const addCurrency = (code: string) => {
+    const addCurrency = useCallback((code: string) => {
         if (!favoriteCurrencies.includes(code)) {
             setFavoriteCurrencies([...favoriteCurrencies, code]);
             // Show confirmation
             setAddedCurrency(code);
-            setTimeout(() => setAddedCurrency(null), 1500);
+            safeSetTimeout(() => setAddedCurrency(null), TIMING.ADDED_BADGE_DURATION);
         }
         setSearchModalVisible(false);
         setSearchQuery('');
-    };
+    }, [favoriteCurrencies, safeSetTimeout]);
 
-    const removeCurrency = (code: string) => {
+    const removeCurrency = useCallback((code: string) => {
         // Don't allow removing if it's currently selected
         if (code === fromCurrency || code === toCurrency) {
             showToast(`${code} is currently in use`);
@@ -159,19 +156,27 @@ export const CurrencyScreen: React.FC = () => {
         const info = CURRENCY_INFO[code];
         const name = info?.name || code;
         setConfirmDialog({ visible: true, code, name });
-    };
+    }, [fromCurrency, toCurrency, favoriteCurrencies, showToast]);
 
-    const handleConfirmRemove = () => {
+    const handleConfirmRemove = useCallback(() => {
         setFavoriteCurrencies(favoriteCurrencies.filter(c => c !== confirmDialog.code));
         setConfirmDialog({ visible: false, code: '', name: '' });
-    };
+    }, [favoriteCurrencies, confirmDialog.code]);
 
-    const handleCancelRemove = () => {
+    const handleCancelRemove = useCallback(() => {
         setConfirmDialog({ visible: false, code: '', name: '' });
-    };
+    }, []);
 
-    const fromCurrencyData = CURRENCY_INFO[fromCurrency] || { name: fromCurrency, symbol: fromCurrency };
-    const toCurrencyData = CURRENCY_INFO[toCurrency] || { name: toCurrency, symbol: toCurrency };
+    // Memoized currency data to prevent creating new objects on each render
+    const fromCurrencyData = useMemo(() =>
+        CURRENCY_INFO[fromCurrency] || { name: fromCurrency, symbol: fromCurrency },
+        [fromCurrency]
+    );
+
+    const toCurrencyData = useMemo(() =>
+        CURRENCY_INFO[toCurrency] || { name: toCurrency, symbol: toCurrency },
+        [toCurrency]
+    );
 
     // Favorite currency options for picker
     const favoriteOptions = useMemo(() => {
@@ -216,7 +221,6 @@ export const CurrencyScreen: React.FC = () => {
                             <X size={24} color={colors.secondary} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.modalHint}>Long press to remove</Text>
                     <FlatList
                         data={favoriteOptions}
                         keyExtractor={(item) => item.value}
@@ -231,7 +235,7 @@ export const CurrencyScreen: React.FC = () => {
                                     onClose();
                                 }}
                                 onLongPress={() => removeCurrency(item.value)}
-                                delayLongPress={500}
+                                delayLongPress={TIMING.LONG_PRESS_DELAY}
                             >
                                 <View style={styles.modalOptionLeft}>
                                     <Text style={[
@@ -240,9 +244,6 @@ export const CurrencyScreen: React.FC = () => {
                                     ]}>
                                         {item.label}
                                     </Text>
-                                    {(item.value === fromCurrency || item.value === toCurrency) && item.value !== selectedValue && (
-                                        <Text style={styles.inUseHint}>in use</Text>
-                                    )}
                                 </View>
                                 {selectedValue === item.value && (
                                     <Check size={20} color={colors.accent} />
@@ -257,7 +258,9 @@ export const CurrencyScreen: React.FC = () => {
                             setSearchModalVisible(true);
                         }}
                     >
-                        <Plus size={24} color={colors.accent} />
+                        <View style={styles.addButtonIcon}>
+                            <Plus size={18} color={colors.accent} />
+                        </View>
                     </TouchableOpacity>
                 </View>
             </Pressable>
@@ -330,19 +333,7 @@ export const CurrencyScreen: React.FC = () => {
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.header}>
-                <View style={styles.headerTop}>
-                    <Text style={styles.headerTitle}>Currency</Text>
-                    <TouchableOpacity
-                        style={styles.refreshButton}
-                        onPress={() => fetchRates(baseCurrency)}
-                        disabled={loading}
-                    >
-                        <RefreshCw
-                            size={20}
-                            color={loading ? colors.secondary : colors.accent}
-                        />
-                    </TouchableOpacity>
-                </View>
+                <Text style={styles.headerTitle}>Currency</Text>
                 <Text style={styles.headerSubtitle}>
                     {loading ? 'Loading rates...' :
                      error ? error :
@@ -364,15 +355,26 @@ export const CurrencyScreen: React.FC = () => {
                     <>
                         {/* Input Section */}
                         <View style={styles.inputSection}>
+                            <TouchableOpacity
+                                style={styles.refreshButton}
+                                onPress={() => fetchRates(baseCurrency)}
+                                disabled={loading}
+                            >
+                                <RefreshCw
+                                    size={18}
+                                    color={loading ? colors.secondary : colors.accent}
+                                />
+                            </TouchableOpacity>
                             <View style={styles.inputRow}>
                                 <Text style={styles.currencySymbol}>{fromCurrencyData.symbol}</Text>
-                                <TextInput
-                                    style={styles.inputField}
+                                <MarqueeInput
+                                    containerStyle={styles.inputFieldContainer}
+                                    fontSize={48}
                                     value={value}
                                     onChangeText={setValue}
                                     keyboardType="numeric"
                                     placeholder="0"
-                                    placeholderTextColor={colors.secondary}
+                                    maxLength={15}
                                 />
                             </View>
                             <Text style={styles.inputLabel}>{fromCurrencyData.name}</Text>
@@ -415,7 +417,7 @@ export const CurrencyScreen: React.FC = () => {
                             )}
                             <View style={styles.resultRow}>
                                 <Text style={styles.resultSymbol}>{toCurrencyData.symbol}</Text>
-                                <Text style={styles.resultValue}>{result}</Text>
+                                <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
                             </View>
                             <Text style={styles.resultCurrency}>{toCurrencyData.name}</Text>
                         </TouchableOpacity>
@@ -431,16 +433,6 @@ export const CurrencyScreen: React.FC = () => {
 
                         {/* My Currencies */}
                         <View style={styles.myCurrenciesSection}>
-                            <View style={styles.myCurrenciesHeader}>
-                                <Text style={styles.myCurrenciesLabel}>MY CURRENCIES</Text>
-                                <TouchableOpacity
-                                    style={styles.addCurrencyButton}
-                                    onPress={() => setSearchModalVisible(true)}
-                                >
-                                    <Plus size={20} color={colors.accent} />
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={styles.myCurrenciesHint}>Long press to remove</Text>
                             <View style={styles.currencyPillsContainer}>
                                 {favoriteCurrencies.map(code => {
                                     const info = CURRENCY_INFO[code];
@@ -461,7 +453,7 @@ export const CurrencyScreen: React.FC = () => {
                                                 }
                                             }}
                                             onLongPress={() => removeCurrency(code)}
-                                            delayLongPress={500}
+                                            delayLongPress={TIMING.LONG_PRESS_DELAY}
                                         >
                                             <Text style={[
                                                 styles.currencyPillText,
@@ -529,25 +521,25 @@ export const CurrencyScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.main },
     header: { paddingHorizontal: 16, paddingVertical: 16 },
-    headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerTitle: { fontFamily, fontSize: 28, fontWeight: '600', color: colors.primary },
-    headerSubtitle: { fontSize: 12, color: colors.secondary, marginTop: 4 },
-    refreshButton: { padding: 8 },
+    headerSubtitle: { fontSize: 12, color: colors.secondary },
+    refreshButton: { position: 'absolute', top: 8, right: 8, padding: 8, zIndex: 1 },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, gap: 16 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60, gap: 16 },
     loadingText: { fontSize: 14, color: colors.secondary },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        gap: 8,
+        padding: 20,
+        paddingTop: 32,
+        paddingBottom: 16,
+        gap: 4,
+        ...shadows.card,
     },
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     currencySymbol: { fontSize: 32, fontWeight: '300', color: colors.secondary },
-    inputField: { flex: 1, fontSize: 48, fontWeight: '300', color: colors.primary },
+    inputFieldContainer: { flex: 1, minHeight: 50, textAlignVertical: 'center' },
     inputLabel: { fontSize: 14, color: colors.secondary },
     currencyContainer: { gap: 12 },
     currencyField: { gap: 8 },
@@ -560,20 +552,18 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 24,
         borderRadius: 24,
-        backgroundColor: colors.input,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
         alignSelf: 'center',
+        ...shadows.button,
     },
     swapButtonText: { fontSize: 14, fontWeight: '600', color: colors.accent },
     resultContainer: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 24,
         alignItems: 'center',
         gap: 8,
+        ...shadows.card,
     },
     resultRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     resultSymbol: { fontSize: 32, fontWeight: '300', color: colors.primary },
@@ -583,33 +573,41 @@ const styles = StyleSheet.create({
     rateText: { fontSize: 14, color: colors.secondary },
     copiedBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 12,
+        right: 12,
         backgroundColor: colors.accent,
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 12,
+        ...shadows.glow,
     },
-    copiedText: { color: colors.main, fontSize: 12, fontWeight: '600' },
+    copiedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
 
     // Modal styles
     modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
     modalContent: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '70%' },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.subtle },
     modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
-    modalHint: { fontSize: 12, color: colors.secondary, textAlign: 'center', paddingVertical: 8, backgroundColor: colors.input },
     modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderBottomWidth: 1, borderBottomColor: colors.subtle + '40' },
     modalOptionSelected: { backgroundColor: colors.accent + '15' },
     modalOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     modalOptionText: { fontSize: 16, color: colors.primary },
     modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
-    inUseHint: { fontSize: 11, color: colors.secondary, backgroundColor: colors.subtle, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
-    addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 20, borderTopWidth: 1, borderTopColor: colors.subtle },
+    addButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 16, borderTopWidth: 1, borderTopColor: colors.subtle, backgroundColor: colors.elevated },
+    addButtonIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...shadows.button,
+    },
 
     // Search modal styles
     searchModalContainer: { flex: 1, backgroundColor: colors.overlay },
     searchModalContent: { flex: 1, backgroundColor: colors.main, marginTop: 60, borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-    searchInputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.input, margin: 16, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.subtle, gap: 12 },
+    searchInputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.elevated, margin: 16, paddingHorizontal: 16, borderRadius: 12, gap: 12 },
     searchInput: { flex: 1, paddingVertical: 14, color: colors.primary, fontSize: 16 },
     searchResultItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.subtle + '40' },
     searchResultLeft: { gap: 4 },
@@ -621,28 +619,22 @@ const styles = StyleSheet.create({
 
     // My Currencies section
     myCurrenciesSection: { gap: 8 },
-    myCurrenciesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    myCurrenciesLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
-    myCurrenciesHint: { fontSize: 11, color: colors.secondary, marginLeft: 4 },
-    addCurrencyButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     currencyPillsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     currencyPill: {
         flexDirection: 'column',
         alignItems: 'center',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         paddingVertical: 10,
         paddingHorizontal: 14,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         minWidth: 60,
+        ...shadows.button,
     },
     currencyPillActive: {
-        backgroundColor: colors.accent + '20',
-        borderColor: colors.accent,
+        backgroundColor: colors.accent,
     },
     currencyPillAdded: {
-        borderColor: colors.accent,
+        backgroundColor: colors.accent,
     },
     currencyPillText: { fontSize: 18, fontWeight: '600', color: colors.secondary },
     currencyPillTextActive: { color: colors.primary },
@@ -669,9 +661,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         alignItems: 'center',
+        ...shadows.card,
     },
     toastText: {
         color: colors.primary,

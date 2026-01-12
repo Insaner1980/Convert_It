@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Convert It!",
-    "slug": "convert-it",
+    "name": "UnitX",
+    "slug": "unitx",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,18 +10,19 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#09090b"
-    },
-    "ios": {
-      "supportsTablet": true
+      "backgroundColor": "#000000"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#09090b"
+        "backgroundColor": "#141416"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.convertit.app"
+      "package": "com.unitx.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

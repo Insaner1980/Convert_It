@@ -2,10 +2,12 @@
 // Convert between fractions and decimals
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
-import { fontFamily } from '../../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 type Mode = 'toDecimal' | 'toFraction';
 
@@ -53,9 +55,10 @@ export const FractionDecimalConverter: React.FC = () => {
     const [denominator, setDenominator] = useState('');
     const [decimalInput, setDecimalInput] = useState('');
     const [copiedField, setCopiedField] = useState<string | null>(null);
+    const { copyToClipboard } = useClipboard();
 
-    const copyToClipboard = async (text: string, field: string) => {
-        await Clipboard.setStringAsync(text);
+    const handleCopy = async (text: string, field: string) => {
+        await copyToClipboard(text);
         setCopiedField(field);
         setTimeout(() => setCopiedField(null), 1500);
     };
@@ -120,25 +123,29 @@ export const FractionDecimalConverter: React.FC = () => {
                     {/* Fraction Input */}
                     <View style={styles.fractionInput}>
                         <View style={styles.fractionPart}>
-                            <TextInput
-                                style={styles.fractionNumber}
+                            <MarqueeInput
+                                containerStyle={styles.fractionInputContainer}
+                                inputStyle={styles.fractionInputStyle}
+                                fontSize={40}
                                 value={numerator}
                                 onChangeText={setNumerator}
                                 keyboardType="numeric"
                                 placeholder="0"
-                                placeholderTextColor={colors.secondary}
+                                maxLength={10}
                             />
                             <Text style={styles.fractionLabel}>Numerator</Text>
                         </View>
                         <Text style={styles.fractionDivider}>/</Text>
                         <View style={styles.fractionPart}>
-                            <TextInput
-                                style={styles.fractionNumber}
+                            <MarqueeInput
+                                containerStyle={styles.fractionInputContainer}
+                                inputStyle={styles.fractionInputStyle}
+                                fontSize={40}
                                 value={denominator}
                                 onChangeText={setDenominator}
                                 keyboardType="numeric"
                                 placeholder="1"
-                                placeholderTextColor={colors.secondary}
+                                maxLength={10}
                             />
                             <Text style={styles.fractionLabel}>Denominator</Text>
                         </View>
@@ -149,7 +156,7 @@ export const FractionDecimalConverter: React.FC = () => {
                         <View style={styles.results}>
                             <TouchableOpacity
                                 style={styles.resultCard}
-                                onPress={() => copyToClipboard(result.decimal || '', 'decimal')}
+                                onPress={() => handleCopy(result.decimal || '', 'decimal')}
                                 activeOpacity={0.7}
                             >
                                 {copiedField === 'decimal' && (
@@ -158,11 +165,11 @@ export const FractionDecimalConverter: React.FC = () => {
                                     </View>
                                 )}
                                 <Text style={styles.resultLabel}>DECIMAL</Text>
-                                <Text style={styles.resultValueLarge}>{result.decimal}</Text>
+                                <Text style={[styles.resultValueLarge, { fontSize: getDynamicFontSize(result.decimal || '', 36) }]}>{result.decimal}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={styles.resultCard}
-                                onPress={() => copyToClipboard(result.percentage || '', 'percentage')}
+                                onPress={() => handleCopy(result.percentage || '', 'percentage')}
                                 activeOpacity={0.7}
                             >
                                 {copiedField === 'percentage' && (
@@ -181,13 +188,14 @@ export const FractionDecimalConverter: React.FC = () => {
                     {/* Decimal Input */}
                     <View style={styles.inputSection}>
                         <Text style={styles.label}>DECIMAL NUMBER</Text>
-                        <TextInput
-                            style={styles.input}
+                        <MarqueeInput
+                            containerStyle={styles.inputContainer}
+                            fontSize={40}
                             value={decimalInput}
                             onChangeText={setDecimalInput}
                             keyboardType="numeric"
                             placeholder="0.5"
-                            placeholderTextColor={colors.secondary}
+                            maxLength={15}
                         />
                     </View>
 
@@ -196,7 +204,7 @@ export const FractionDecimalConverter: React.FC = () => {
                         <View style={styles.results}>
                             <TouchableOpacity
                                 style={styles.resultCard}
-                                onPress={() => copyToClipboard(result.fraction || '', 'fraction')}
+                                onPress={() => handleCopy(result.fraction || '', 'fraction')}
                                 activeOpacity={0.7}
                             >
                                 {copiedField === 'fraction' && (
@@ -205,12 +213,12 @@ export const FractionDecimalConverter: React.FC = () => {
                                     </View>
                                 )}
                                 <Text style={styles.resultLabel}>FRACTION</Text>
-                                <Text style={styles.resultValueLarge}>{result.fraction}</Text>
+                                <Text style={[styles.resultValueLarge, { fontSize: getDynamicFontSize(result.fraction || '', 36) }]}>{result.fraction}</Text>
                             </TouchableOpacity>
                             {result.mixed && (
                                 <TouchableOpacity
                                     style={styles.resultCard}
-                                    onPress={() => copyToClipboard(result.mixed!, 'mixed')}
+                                    onPress={() => handleCopy(result.mixed!, 'mixed')}
                                     activeOpacity={0.7}
                                 >
                                     {copiedField === 'mixed' && (
@@ -234,14 +242,13 @@ const styles = StyleSheet.create({
     container: { gap: 16 },
     modeContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     modeButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 12,
         paddingHorizontal: 8,
         borderRadius: 8,
@@ -267,23 +274,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 16,
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 24,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     fractionPart: {
         alignItems: 'center',
         gap: 8,
     },
-    fractionNumber: {
-        fontFamily,
-        fontSize: 40,
-        fontWeight: '300',
-        color: colors.primary,
+    fractionInputContainer: {
+        flex: 1,
+        minHeight: 50,
+    },
+    fractionInputStyle: {
         textAlign: 'center',
-        minWidth: 80,
     },
     fractionLabel: {
         fontFamily,
@@ -298,12 +303,11 @@ const styles = StyleSheet.create({
         color: colors.secondary,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -312,23 +316,20 @@ const styles = StyleSheet.create({
         color: colors.secondary,
         letterSpacing: 1,
     },
-    input: {
-        fontFamily,
-        fontSize: 40,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 50,
     },
     results: {
         gap: 8,
     },
     resultCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         alignItems: 'center',
         gap: 4,
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
@@ -358,9 +359,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

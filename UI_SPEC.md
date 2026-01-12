@@ -1,16 +1,17 @@
 # UnitX - UI Specification
 
-**Version:** 4.0
-**Date:** 2026-01-09
+**Version:** 4.1
+**Date:** 2026-01-10
 **Platform:** React Native (Expo) - Android (Google Pixel 9)
 
 ---
 
 ## Overview
 
-**UnitX** is a premium conversion utility app with a dark monochromatic design and red accent color. The app features unit conversion, size charts, kitchen tools, currency exchange, and utility tools.
+**UnitX** is a premium conversion utility app with a warm dark design and copper/terracotta accent color. The app features unit conversion, size charts, kitchen tools, currency exchange, and utility tools.
 
 **Tagline:** "Convert with precision"
+**Design Theme:** Premium Warm Dark - Sophisticated, elegant design inspired by premium product showcases
 
 ---
 
@@ -19,26 +20,67 @@
 ### Core Colors
 ```typescript
 {
-  main: '#000000',        // Pure black (app background)
-  card: '#0f0f0f',        // Very dark gray (cards, bottom bar)
-  input: '#1a1a1a',       // Slightly lighter (input fields)
-  subtle: '#262626',      // Subtle borders
-  primary: '#ffffff',     // Bright white (primary text)
-  secondary: '#6b6b6b',   // Medium gray (secondary text)
-  accent: '#A30000',      // Red (active states, buttons, highlights)
-  accentHover: '#7a0000', // Darker red (hover/press states)
-  overlay: 'rgba(0,0,0,0.7)', // Modal overlay
+  // Backgrounds - warm dark grays instead of pure black
+  main: '#141416',        // Main background - warm charcoal
+  card: '#1c1c1e',        // Card background - elevated surface
+  input: '#242426',       // Input fields - subtle lift
+  subtle: '#38383a',      // Borders - soft definition
+
+  // Text
+  primary: '#f5f5f7',     // Primary text - warm white
+  secondary: '#86868b',   // Secondary text - balanced gray
+
+  // Accent - warm copper/terracotta
+  accent: '#c9785d',      // Primary accent - warm copper
+  accentMuted: '#c9785d20', // Muted accent for backgrounds
+  accentHover: '#b56a50', // Hover state
+
+  // Utility
+  overlay: 'rgba(0,0,0,0.75)', // Modal overlay
+
+  // Additional depth colors
+  elevated: '#2c2c2e',    // Elevated surfaces
+  highlight: '#48484a',   // Highlights and focus states
 }
 ```
 
 ### Usage Guidelines
-- **Active states:** Red background (`#A30000`) with white text (`#ffffff`)
-- **Inactive states:** Card/input background with gray text
-- **Bottom tab bar:** `#0f0f0f` (card color)
-- **Active tab icon:** `#A30000` (red)
-- **Inactive tab icon:** `#6b6b6b` (gray)
-- **Copied badge:** Red background with black text
+- **Active states:** Copper background (`#c9785d`) with warm white text (`#f5f5f7`)
+- **Inactive states:** Transparent background with gray text (`#86868b`)
+- **Bottom tab bar:** `#1c1c1e` (card color)
+- **Active tab icon:** `#c9785d` (copper)
+- **Inactive tab icon:** `#86868b` (gray)
+- **Copied badge:** Copper background with dark text
 - **Tab/Category buttons:** Text only (no icons)
+- **Add (+) icons:** Copper (`#c9785d`) - not white
+
+### Shadows
+Cards and buttons use subtle shadows for depth:
+```typescript
+shadows: {
+  card: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  button: {
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  glow: {
+    shadowColor: '#c9785d',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+}
+```
 
 ---
 
@@ -94,12 +136,11 @@
 ### Tab Bar Styling
 ```typescript
 {
-  backgroundColor: colors.card,  // #0f0f0f
-  borderTopColor: colors.subtle, // #262626
-  borderTopWidth: 0.5,
+  backgroundColor: colors.card,  // #1c1c1e
   paddingTop: 12,
   paddingBottom: Math.max(insets.bottom, 16),
   height: 70 + Math.max(insets.bottom, 16),
+  ...shadows.card,  // Subtle shadow for depth
 }
 ```
 
@@ -197,7 +238,7 @@
 
 ### 5. TOOLS (Utility Tools)
 
-**Sub-tabs:** Colors | Text | Numbers | Data | Time | Dev
+**Sub-tabs:** Colors | Text | Numbers | Data | Time (all on one row)
 
 #### Colors (RGB Converter)
 - Custom gesture-based sliders (Pan + Tap)
@@ -253,14 +294,15 @@ copiedBadge: {
   position: 'absolute',
   top: 4-8,
   right: 4-8,
-  backgroundColor: colors.accent,  // #A30000
+  backgroundColor: colors.accent,  // #c9785d
   paddingHorizontal: 8-12,
   paddingVertical: 2-4,
   borderRadius: 8-12,
   zIndex: 1,
+  ...shadows.glow,  // Copper glow effect
 },
 copiedText: {
-  color: colors.main,  // #000000
+  color: colors.primary,  // #f5f5f7
   fontSize: 10-12,
   fontWeight: '600',
 }
@@ -273,38 +315,36 @@ copiedText: {
 ### Cards
 ```typescript
 {
-  backgroundColor: colors.input,  // #1a1a1a
+  backgroundColor: colors.card,  // #1c1c1e
   borderRadius: 16,
-  borderWidth: 1,
-  borderColor: colors.subtle,  // #262626
   padding: 16,
+  ...shadows.card,  // Subtle shadow for depth
 }
 ```
 
 ### Input Fields
 ```typescript
 {
-  backgroundColor: colors.input,
+  backgroundColor: colors.card,  // #1c1c1e
   borderRadius: 12,
-  borderWidth: 1,
-  borderColor: colors.subtle,
-  color: colors.primary,
+  color: colors.primary,  // #f5f5f7
   fontSize: 16-40,
   padding: 12-16,
+  ...shadows.card,
 }
 ```
 
 ### Active Pills/Tabs
 ```typescript
 {
-  backgroundColor: colors.accent,  // #A30000
+  backgroundColor: colors.accent,  // #c9785d (copper)
   borderRadius: 8-12,
   paddingHorizontal: 12-24,
   paddingVertical: 8-12,
 }
 // Text
 {
-  color: colors.primary,  // #ffffff (white text on red)
+  color: colors.primary,  // #f5f5f7 (warm white on copper)
   fontWeight: '600',
 }
 ```
@@ -319,20 +359,50 @@ copiedText: {
 }
 // Text
 {
-  color: colors.secondary,  // #6b6b6b
+  color: colors.secondary,  // #86868b
   fontWeight: '600',
 }
+```
+
+### Dynamic Button Sizing (flexGrow)
+Tab/category buttons use `flexGrow: 1` (not `flex: 1`) to:
+- Fill the full container width (no empty space)
+- Allow longer labels to have proportionally more space
+- Prevent text cramping on longer labels like "Temperature"
+
+```typescript
+tabButton: {
+  flexGrow: 1,           // Grow to fill space, but start at content width
+  paddingVertical: 12-14,
+  paddingHorizontal: 8,
+  alignItems: 'center',
+  borderRadius: 12,
+}
+```
+
+### Add Button Icon
+The "+" button in modals uses accent color icon on dark background:
+```typescript
+addButtonIcon: {
+  width: 32,
+  height: 32,
+  borderRadius: 16,
+  backgroundColor: colors.card,  // Dark background
+  alignItems: 'center',
+  justifyContent: 'center',
+}
+// Icon
+<Plus size={18} color={colors.accent} />  // Red icon
 ```
 
 ### Result Containers
 ```typescript
 {
-  backgroundColor: colors.input,
+  backgroundColor: colors.card,  // #1c1c1e
   borderRadius: 16,
-  borderWidth: 1,
-  borderColor: colors.subtle,
   padding: 16,
   alignItems: 'center',
+  ...shadows.card,
 }
 ```
 
@@ -343,17 +413,17 @@ copiedText: {
 ### Picker Modal
 ```typescript
 overlay: {
-  backgroundColor: colors.overlay,  // rgba(0,0,0,0.7)
+  backgroundColor: colors.overlay,  // rgba(0,0,0,0.75)
 }
 content: {
-  backgroundColor: colors.card,  // #0f0f0f
+  backgroundColor: colors.card,  // #1c1c1e
   borderTopLeftRadius: 24,
   borderTopRightRadius: 24,
   maxHeight: '60%',
 }
 header: {
   borderBottomWidth: 1,
-  borderBottomColor: colors.subtle,
+  borderBottomColor: colors.subtle,  // #38383a
   padding: 20,
 }
 ```
@@ -362,21 +432,20 @@ header: {
 Custom styled confirmation dialog (replaces native Alert.alert for destructive actions):
 ```typescript
 dialog: {
-  backgroundColor: colors.card,  // #0f0f0f
+  backgroundColor: colors.card,  // #1c1c1e
   borderRadius: 16,
   padding: 24,
-  borderWidth: 1,
-  borderColor: colors.subtle,
+  ...shadows.card,
 }
 cancelButton: {
-  backgroundColor: colors.input,  // #1a1a1a
+  backgroundColor: colors.input,  // #242426
   borderRadius: 12,
 }
 confirmButton: {
-  backgroundColor: colors.accent,  // #A30000 (destructive)
+  backgroundColor: colors.accent,  // #c9785d (copper)
 }
 confirmText: {
-  color: colors.main,  // #000000
+  color: colors.primary,  // #f5f5f7
 }
 ```
 
@@ -503,7 +572,7 @@ UnitX/
 ## Accessibility
 
 - **Touch targets:** Minimum 44px
-- **Contrast:** High contrast (white on black/dark gray)
+- **Contrast:** High contrast (warm white on warm dark grays)
 - **Font sizes:** Minimum 10px, recommended 14px+
 - **Safe areas:** Respect all device insets
 
@@ -518,4 +587,4 @@ UnitX/
 
 ---
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-10

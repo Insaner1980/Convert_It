@@ -23,16 +23,17 @@ import {
     Clock,
     RotateCcw,
     MapPin,
-    Plus,
     Search,
 } from 'lucide-react-native';
-import * as Clipboard from 'expo-clipboard';
 import * as Location from 'expo-location';
 
 import { WORLD_CITIES, DATA_UNITS } from '../constants';
+import { useClipboard, useMounted } from '../hooks';
+import { API_ENDPOINTS, fetchWithTimeout } from '../config';
 import { WorldCity } from '../types';
 import { colors } from '../theme/colors';
-import { fontFamily } from '../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../theme/typography';
+import { shadows } from '../theme';
 import { PickerButton } from '../components/PickerButton';
 import {
     TextCaseConverter,
@@ -43,8 +44,9 @@ import {
     DurationCalculator,
 } from '../components/tools';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { MarqueeInput } from '../components/MarqueeInput';
 
-type ToolTab = 'colors' | 'time' | 'data' | 'text' | 'numbers' | 'dev';
+type ToolTab = 'colors' | 'text' | 'numbers' | 'data' | 'time';
 
 // Custom Searchable Picker Modal with Online Search AND GPS
 const PickerModal: React.FC<{
@@ -89,9 +91,7 @@ const PickerModal: React.FC<{
         setIsSearching(true);
         const newTimer = setTimeout(async () => {
             try {
-                const response = await fetch(
-                    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(text)}&count=10&language=en&format=json`
-                );
+                const response = await fetchWithTimeout(API_ENDPOINTS.geocodingSearch(text));
                 const data = await response.json();
 
                 if (data.results) {
@@ -112,8 +112,8 @@ const PickerModal: React.FC<{
                 } else {
                     setOnlineResults([]);
                 }
-            } catch (error) {
-                console.error("Search error", error);
+            } catch {
+                // Search failed silently
             } finally {
                 setIsSearching(false);
             }
@@ -175,8 +175,7 @@ const PickerModal: React.FC<{
                             <TouchableOpacity
                                 style={[styles.modalOption, selectedValue === item.value && styles.modalOptionSelected]}
                                 onPress={() => {
-                                    // @ts-ignore
-                                    onSelect(item.value, item.data);
+                                    onSelect(item.value, (item as { data?: WorldCity }).data);
                                     onClose();
                                 }}
                             >
@@ -342,20 +341,32 @@ const TimePickerModal: React.FC<{
     );
 };
 
+// Extracted to module scope to prevent re-creation on each render
+interface ToolsTabButtonProps {
+    tab: ToolTab;
+    label: string;
+    activeTab: ToolTab;
+    onPress: (tab: ToolTab) => void;
+}
+
+const ToolsTabButton: React.FC<ToolsTabButtonProps> = ({ tab, label, activeTab, onPress }) => (
+    <TouchableOpacity
+        onPress={() => onPress(tab)}
+        style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
+    >
+        <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
+            {label}
+        </Text>
+    </TouchableOpacity>
+);
+
 export const ToolsScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState<ToolTab>('colors');
 
-    const TabButton = ({ tab, label }: { tab: ToolTab; label: string }) => (
-        <TouchableOpacity
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-        >
-            <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
-                {label}
-            </Text>
-        </TouchableOpacity>
-    );
+    const handleTabChange = useCallback((tab: ToolTab) => {
+        setActiveTab(tab);
+    }, []);
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -379,15 +390,11 @@ export const ToolsScreen: React.FC = () => {
                     keyboardShouldPersistTaps="handled"
                 >
                 <View style={styles.tabContainer}>
-                    <TabButton tab="colors" label="Colors" />
-                    <TabButton tab="text" label="Text" />
-                    <TabButton tab="numbers" label="Numbers" />
-                </View>
-
-                <View style={styles.tabContainer}>
-                    <TabButton tab="data" label="Data" />
-                    <TabButton tab="time" label="Time" />
-                    <TabButton tab="dev" label="Dev" />
+                    <ToolsTabButton tab="colors" label="Colors" activeTab={activeTab} onPress={handleTabChange} />
+                    <ToolsTabButton tab="text" label="Text" activeTab={activeTab} onPress={handleTabChange} />
+                    <ToolsTabButton tab="numbers" label="Numbers" activeTab={activeTab} onPress={handleTabChange} />
+                    <ToolsTabButton tab="data" label="Data" activeTab={activeTab} onPress={handleTabChange} />
+                    <ToolsTabButton tab="time" label="Time" activeTab={activeTab} onPress={handleTabChange} />
                 </View>
 
                 {activeTab === 'colors' && <ColorConverter />}
@@ -397,6 +404,8 @@ export const ToolsScreen: React.FC = () => {
                         <PercentageCalculator />
                         <View style={styles.sectionDivider} />
                         <FractionDecimalConverter />
+                        <View style={styles.sectionDivider} />
+                        <NumberBaseConverter />
                     </View>
                 )}
                 {activeTab === 'data' && <DataConverter />}
@@ -405,11 +414,6 @@ export const ToolsScreen: React.FC = () => {
                         <TimeZones />
                         <View style={styles.sectionDivider} />
                         <DurationCalculator />
-                    </View>
-                )}
-                {activeTab === 'dev' && (
-                    <View style={styles.content}>
-                        <NumberBaseConverter />
                         <View style={styles.sectionDivider} />
                         <UnixTimestampConverter />
                     </View>
@@ -422,10 +426,10 @@ export const ToolsScreen: React.FC = () => {
 
 // Color Converter code remains same...
 const ColorConverter: React.FC = () => {
+    const { copied, copyToClipboard } = useClipboard();
     const [r, setR] = useState(253);
     const [g, setG] = useState(218);
     const [b, setB] = useState(13);
-    const [copied, setCopied] = useState(false);
     const rgbToHex = (r: number, g: number, b: number) => {
         return "#" + [r, g, b].map(x => {
             const hex = x.toString(16);
@@ -451,11 +455,6 @@ const ColorConverter: React.FC = () => {
     };
     const hex = rgbToHex(r, g, b);
     const hsl = rgbToHsl(r, g, b);
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
     return (
         <View style={styles.content}>
             <TouchableOpacity
@@ -569,17 +568,12 @@ const SliderRow = ({ label, value, onChange, color }: { label: string; value: nu
 
 // Data Converter code remains same...
 const DataConverter: React.FC = () => {
+    const { copied, copyToClipboard } = useClipboard();
     const [value, setValue] = useState<string>('1');
     const [fromUnit, setFromUnit] = useState('gb');
     const [toUnit, setToUnit] = useState('mb');
     const [fromModalVisible, setFromModalVisible] = useState(false);
     const [toModalVisible, setToModalVisible] = useState(false);
-    const [copied, setCopied] = useState(false);
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
     const result = useMemo(() => {
         const val = parseFloat(value);
         if (isNaN(val)) return '---';
@@ -598,7 +592,14 @@ const DataConverter: React.FC = () => {
         <View style={styles.content}>
             <View style={styles.inputSection}>
                 <Text style={styles.inputLabel}>Amount</Text>
-                <TextInput style={styles.inputField} value={value} onChangeText={setValue} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.secondary} />
+                <MarqueeInput
+                    containerStyle={styles.inputFieldContainer}
+                    value={value}
+                    onChangeText={setValue}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    maxLength={15}
+                />
             </View>
             <View style={styles.unitsContainer}>
                 <View style={styles.unitField}>
@@ -616,7 +617,7 @@ const DataConverter: React.FC = () => {
             </View>
             <TouchableOpacity style={styles.resultContainer} onPress={() => copyToClipboard(result)} activeOpacity={0.7}>
                 {copied && <View style={styles.copiedBadge}><Text style={styles.copiedText}>Copied!</Text></View>}
-                <Text style={styles.resultValue}>{result}</Text>
+                <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result, 40) }]}>{result}</Text>
                 <Text style={styles.resultUnit}>{DATA_UNITS.find(u => u.id === toUnit)?.label}</Text>
             </TouchableOpacity>
             <PickerModal visible={fromModalVisible} onClose={() => setFromModalVisible(false)} title="Select From Unit" options={unitOptions} selectedValue={fromUnit} onSelect={setFromUnit} />
@@ -627,6 +628,7 @@ const DataConverter: React.FC = () => {
 
 // IMPROVED Time Zones Component
 const TimeZones: React.FC = () => {
+    const isMounted = useMounted();
     // Base State
     const [now, setNow] = useState(new Date()); // Always runs in background
     const [manualOffsetMinutes, setManualOffsetMinutes] = useState<number | null>(null);
@@ -656,7 +658,6 @@ const TimeZones: React.FC = () => {
         try {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                console.warn('Permission to access location was denied');
                 return;
             }
 
@@ -685,12 +686,13 @@ const TimeZones: React.FC = () => {
                     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone // Assume device setting matches location
                 };
 
+                if (!isMounted.current) return;
                 setCustomBaseCity(newCity);
                 setBaseCityId(newCity.id);
                 setBaseCitySelectorVisible(false); // Close modal
             }
-        } catch (e) {
-            console.error("Location Error", e);
+        } catch {
+            // Location detection failed silently
         }
     };
 
@@ -764,8 +766,7 @@ const TimeZones: React.FC = () => {
             }
 
             return date; // Fail safe
-        } catch (e) {
-            console.error("Date error", e);
+        } catch {
             return date;
         }
     }, []);
@@ -956,14 +957,9 @@ const TimeZones: React.FC = () => {
             {/* Comparison List */}
             <View style={styles.listHeader}>
                 <Text style={styles.sectionTitle}>COMPARED TO</Text>
-                <View style={styles.listActionRow}>
-                    <TouchableOpacity onPress={toggleSort} style={styles.sortButton}>
-                        <Text style={styles.sortButtonText}>{getSortLabel()}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setCitySelectorVisible(true)} style={styles.addCityButton}>
-                        <Plus size={20} color={colors.accent} />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity onPress={toggleSort} style={styles.sortButton}>
+                    <Text style={styles.sortButtonText}>{getSortLabel()}</Text>
+                </TouchableOpacity>
             </View>
 
             {sortedCities.map((city) => {
@@ -1053,8 +1049,8 @@ const styles = StyleSheet.create({
     headerTitle: { fontFamily, fontSize: 28, fontWeight: '600', color: colors.primary },
     scrollView: { flex: 1 },
     scrollContent: { paddingHorizontal: 16, gap: 16 },
-    tabContainer: { flexDirection: 'row', backgroundColor: colors.input, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: colors.subtle },
-    tabButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 12 },
+    tabContainer: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 16, padding: 4, ...shadows.card },
+    tabButton: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14, paddingHorizontal: 8, borderRadius: 12 },
     tabButtonActive: { backgroundColor: colors.accent },
     tabButtonText: { fontSize: 12, fontWeight: '500', color: colors.secondary },
     tabButtonTextActive: { color: colors.primary },
@@ -1063,18 +1059,17 @@ const styles = StyleSheet.create({
 
     // Reference Card Styles
     referenceCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 24,
         padding: 24,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 16,
+        ...shadows.card,
     },
     refHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     refLabel: { fontSize: 11, fontWeight: '700', color: colors.secondary, letterSpacing: 1 },
     resetButton: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.accent + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
     resetText: { fontSize: 11, color: colors.accent, fontWeight: '600' },
-    baseCitySelector: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.input, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.subtle },
+    baseCitySelector: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.elevated, padding: 12, borderRadius: 12 },
     baseCityName: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.primary },
     bigClock: { alignItems: 'center', marginVertical: 8, position: 'relative' },
     bigTime: { fontSize: 64, fontWeight: '300', color: colors.primary, letterSpacing: 2 },
@@ -1084,13 +1079,11 @@ const styles = StyleSheet.create({
 
     // List Styles
     listHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-    listActionRow: { flexDirection: 'row', gap: 12 },
     sectionTitle: { fontSize: 12, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
-    sortButton: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.subtle },
+    sortButton: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.card, ...shadows.button },
     sortButtonText: { fontSize: 11, fontWeight: '600', color: colors.secondary },
-    addCityButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 
-    cityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 12 },
+    cityCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 16, gap: 12, ...shadows.card },
     cityInfo: { flex: 1 },
     cityName: { fontSize: 16, fontWeight: '600', color: colors.primary },
     cityRegion: { fontSize: 12, color: colors.secondary, marginTop: 2 },
@@ -1105,28 +1098,28 @@ const styles = StyleSheet.create({
     offsetText: { fontSize: 12, fontWeight: '700', color: colors.secondary },
 
     // Style fixes from previous steps
-    inputSection: { backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 8 },
+    inputSection: { backgroundColor: colors.card, borderRadius: 16, padding: 20, gap: 8, ...shadows.card },
     inputLabel: { fontSize: 14, fontWeight: '500', color: colors.secondary },
-    inputField: { fontSize: 48, fontWeight: '300', color: colors.primary },
+    inputFieldContainer: { flex: 1, minHeight: 58 },
     unitsContainer: { gap: 12 },
     unitField: { gap: 8 },
     unitLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
-    swapButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, backgroundColor: colors.input, borderWidth: 1, borderColor: colors.subtle, alignSelf: 'center' },
+    swapButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 24, backgroundColor: colors.card, alignSelf: 'center', ...shadows.button },
     swapButtonText: { fontSize: 14, fontWeight: '600', color: colors.accent },
-    resultContainer: { backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 8 },
+    resultContainer: { backgroundColor: colors.card, borderRadius: 20, padding: 24, alignItems: 'center', gap: 8, ...shadows.card },
     resultValue: { fontSize: 40, fontWeight: '600', color: colors.primary },
     resultUnit: { fontSize: 16, color: colors.secondary },
 
     // Other existing styles
-    colorPreview: { height: 160, borderRadius: 24, borderWidth: 1, borderColor: colors.subtle, justifyContent: 'center', alignItems: 'center' },
-    copiedBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, zIndex: 1 },
-    copiedText: { color: colors.main, fontSize: 12, fontWeight: '600' },
+    colorPreview: { height: 160, borderRadius: 24, justifyContent: 'center', alignItems: 'center', ...shadows.card },
+    copiedBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: colors.accent, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, zIndex: 1, ...shadows.glow },
+    copiedText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
     colorValuesRow: { flexDirection: 'row', gap: 16 },
-    colorValueCard: { flex: 1, backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 4 },
+    colorValueCard: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 4, ...shadows.card },
     colorValueLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
     colorValueText: { fontSize: 20, fontWeight: '600', color: colors.primary },
     colorValueTextSmall: { fontSize: 12, fontWeight: '500', color: colors.primary },
-    slidersCard: { backgroundColor: colors.input, borderRadius: 24, padding: 16, borderWidth: 1, borderColor: colors.subtle, gap: 24 },
+    slidersCard: { backgroundColor: colors.card, borderRadius: 24, padding: 20, gap: 24, ...shadows.card },
     sliderRow: { gap: 8 },
     sliderLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1 },
     sliderContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -1141,7 +1134,7 @@ const styles = StyleSheet.create({
     modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
 
     // Search styles
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.input, margin: 20, marginBottom: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: colors.subtle },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.elevated, margin: 20, marginBottom: 10, paddingHorizontal: 16, borderRadius: 12 },
     searchIcon: { marginRight: 8 },
     searchInput: { flex: 1, paddingVertical: 12, color: colors.primary, fontSize: 16 },
     loadingContainer: { padding: 20, alignItems: 'center' as const },
@@ -1150,7 +1143,6 @@ const styles = StyleSheet.create({
     gpsButtonText: { color: colors.main, fontWeight: '600', fontSize: 16 },
     emptySearch: { padding: 40, alignItems: 'center' },
     emptySearchText: { color: colors.secondary, fontSize: 16 },
-
     // Time Picker Modal Styles
     timeModalOverlay: {
         flex: 1,
@@ -1163,15 +1155,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.card,
         borderRadius: 24,
         padding: 24,
-        borderWidth: 1,
-        borderColor: colors.subtle,
-        // Removed fixed positioning
+        ...shadows.card,
     },
     timePickerTitle: { fontSize: 20, fontWeight: '600', color: colors.primary, textAlign: 'center', marginBottom: 24 },
     timeInputsRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, marginBottom: 32 },
     timeInputColumn: { alignItems: 'center', gap: 8 },
     timeInputLabel: { fontSize: 12, color: colors.secondary },
-    timeInput: { width: 80, height: 80, borderRadius: 16, backgroundColor: colors.input, color: colors.accent, fontSize: 40, fontWeight: '300', textAlign: 'center', borderWidth: 1, borderColor: colors.subtle },
+    timeInput: { width: 80, height: 80, borderRadius: 16, backgroundColor: colors.elevated, color: colors.accent, fontSize: 40, fontWeight: '300', textAlign: 'center' },
     timeColon: { fontSize: 40, color: colors.secondary, marginTop: 24 },
     timePickerButtons: { flexDirection: 'row', gap: 12 },
     cancelButton: { flex: 1, padding: 16, borderRadius: 12, backgroundColor: colors.input, alignItems: 'center' },

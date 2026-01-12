@@ -2,10 +2,12 @@
 // Calculate percentages in different ways
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
-import { fontFamily } from '../../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 type CalcMode = 'whatIs' | 'whatPercent' | 'percentChange';
 
@@ -13,13 +15,7 @@ export const PercentageCalculator: React.FC = () => {
     const [mode, setMode] = useState<CalcMode>('whatIs');
     const [value1, setValue1] = useState('');
     const [value2, setValue2] = useState('');
-    const [copied, setCopied] = useState(false);
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
+    const { copied, copyToClipboard } = useClipboard();
 
     const result = useMemo(() => {
         const v1 = parseFloat(value1);
@@ -33,9 +29,11 @@ export const PercentageCalculator: React.FC = () => {
                 return ((v1 / 100) * v2).toFixed(2);
             case 'whatPercent':
                 // X is what % of Y?
+                if (v2 === 0) return '---'; // Avoid division by zero
                 return ((v1 / v2) * 100).toFixed(2) + '%';
             case 'percentChange':
                 // % change from X to Y
+                if (v1 === 0) return '---'; // Avoid division by zero
                 const change = ((v2 - v1) / Math.abs(v1)) * 100;
                 return (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
             default:
@@ -81,24 +79,24 @@ export const PercentageCalculator: React.FC = () => {
             <View style={styles.inputsRow}>
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>{currentMode.v1Label}</Text>
-                    <TextInput
-                        style={styles.input}
+                    <MarqueeInput
+                        containerStyle={styles.inputContainer}
                         value={value1}
                         onChangeText={setValue1}
                         keyboardType="decimal-pad"
                         placeholder="0"
-                        placeholderTextColor={colors.secondary}
+                        maxLength={15}
                     />
                 </View>
                 <View style={styles.inputGroup}>
                     <Text style={styles.label}>{currentMode.v2Label}</Text>
-                    <TextInput
-                        style={styles.input}
+                    <MarqueeInput
+                        containerStyle={styles.inputContainer}
                         value={value2}
                         onChangeText={setValue2}
                         keyboardType="decimal-pad"
                         placeholder="0"
-                        placeholderTextColor={colors.secondary}
+                        maxLength={15}
                     />
                 </View>
             </View>
@@ -107,7 +105,7 @@ export const PercentageCalculator: React.FC = () => {
             <TouchableOpacity style={styles.resultContainer} onPress={() => copyToClipboard(result)} activeOpacity={0.7}>
                 {copied && <View style={styles.copiedBadge}><Text style={styles.copiedText}>Copied!</Text></View>}
                 <Text style={styles.resultLabel}>RESULT</Text>
-                <Text style={styles.resultValue}>{result}</Text>
+                <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result, 40) }]}>{result}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -117,14 +115,13 @@ const styles = StyleSheet.create({
     container: { gap: 16 },
     modeContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     modeButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 12,
         paddingHorizontal: 8,
         alignItems: 'center',
@@ -150,12 +147,11 @@ const styles = StyleSheet.create({
     },
     inputGroup: {
         flex: 1,
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -164,20 +160,17 @@ const styles = StyleSheet.create({
         color: colors.secondary,
         letterSpacing: 1,
     },
-    input: {
-        fontFamily,
-        fontSize: 32,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 44,
     },
     resultContainer: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 24,
         alignItems: 'center',
         gap: 8,
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
@@ -194,16 +187,17 @@ const styles = StyleSheet.create({
     },
     copiedBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 12,
+        right: 12,
         backgroundColor: colors.accent,
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 12,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 12,
         fontWeight: '600',
     },

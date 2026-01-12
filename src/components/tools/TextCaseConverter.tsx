@@ -3,18 +3,20 @@
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
 
 type CaseType = 'lower' | 'upper' | 'title' | 'sentence' | 'camel' | 'snake' | 'kebab';
 
 export const TextCaseConverter: React.FC = () => {
     const [inputText, setInputText] = useState('');
     const [copiedType, setCopiedType] = useState<CaseType | null>(null);
+    const { copyToClipboard } = useClipboard();
 
-    const copyToClipboard = async (text: string, type: CaseType) => {
-        await Clipboard.setStringAsync(text);
+    const handleCopy = async (text: string, type: CaseType) => {
+        await copyToClipboard(text);
         setCopiedType(type);
         setTimeout(() => setCopiedType(null), 1500);
     };
@@ -81,7 +83,7 @@ export const TextCaseConverter: React.FC = () => {
                         <TouchableOpacity
                             key={c.type}
                             style={styles.resultCard}
-                            onPress={() => copyToClipboard(result, c.type)}
+                            onPress={() => handleCopy(result, c.type)}
                             activeOpacity={0.7}
                         >
                             {copiedType === c.type && (
@@ -90,7 +92,7 @@ export const TextCaseConverter: React.FC = () => {
                                 </View>
                             )}
                             <Text style={styles.resultLabel}>{c.label}</Text>
-                            <Text style={styles.resultValue} numberOfLines={2}>{result}</Text>
+                            <Text style={styles.resultValue}>{result}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -102,12 +104,11 @@ export const TextCaseConverter: React.FC = () => {
 const styles = StyleSheet.create({
     container: { gap: 16 },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -127,20 +128,21 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     resultCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
         fontSize: 12,
         fontWeight: '600',
         color: colors.secondary,
+        minWidth: 90,
+        flexShrink: 0,
     },
     resultValue: {
         fontFamily,
@@ -159,9 +161,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

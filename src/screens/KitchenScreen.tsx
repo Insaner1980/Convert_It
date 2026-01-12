@@ -10,14 +10,14 @@ import {
     FlatList,
     ActivityIndicator,
 } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Search, Plus, Minus, ChevronDown } from 'lucide-react-native';
 
-import { KITCHEN_UNITS, INGREDIENTS } from '../constants';
+import { KITCHEN_UNITS, INGREDIENTS, TIMING } from '../constants';
 import { KitchenIngredient } from '../types';
 import { colors } from '../theme/colors';
-import { fontFamily } from '../theme/typography';
+import { fontFamily, getDynamicFontSize } from '../theme/typography';
+import { shadows } from '../theme';
 import { PickerModal } from '../components/PickerModal';
 import { PickerButton } from '../components/PickerButton';
 import {
@@ -25,11 +25,30 @@ import {
     ButterConverter,
     ServingSizeAdjuster,
 } from '../components/kitchen';
-
-// USDA API Key - Get yours free at: https://fdc.nal.usda.gov/api-key-signup.html
-const USDA_API_KEY = 'sB18vYGMnhcTSZhVkJRgM4NhGduy9jgAs9luiKbE'; // Replace with your API key
+import { useClipboard, useSafeTimeout, useMounted } from '../hooks';
+import { API_ENDPOINTS, fetchWithTimeout } from '../config';
+import { MarqueeInput } from '../components/MarqueeInput';
 
 type KitchenTab = 'ingredients' | 'oven' | 'special';
+
+// Extracted to module scope to prevent re-creation on each render
+interface TabButtonProps {
+    tab: KitchenTab;
+    label: string;
+    activeTab: KitchenTab;
+    onPress: (tab: KitchenTab) => void;
+}
+
+const TabButton: React.FC<TabButtonProps> = ({ tab, label, activeTab, onPress }) => (
+    <TouchableOpacity
+        onPress={() => onPress(tab)}
+        style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
+    >
+        <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
+            {label}
+        </Text>
+    </TouchableOpacity>
+);
 
 // USDA Food Search Result type
 interface USDAFood {
@@ -47,6 +66,9 @@ interface USDAFoodPortion {
 
 export const KitchenScreen: React.FC = () => {
     const insets = useSafeAreaInsets();
+    const { copied, copyToClipboard } = useClipboard();
+    const { safeSetTimeout } = useSafeTimeout();
+    const isMounted = useMounted();
     const [activeTab, setActiveTab] = useState<KitchenTab>('ingredients');
     const [value, setValue] = useState<string>('1');
     const [ingredientId, setIngredientId] = useState(INGREDIENTS[0].id);
@@ -68,22 +90,15 @@ export const KitchenScreen: React.FC = () => {
     const [searchResults, setSearchResults] = useState<USDAFood[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-    const [copied, setCopied] = useState(false);
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Toast notification state
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ message, type });
-        setTimeout(() => setToast(null), 2500);
-    };
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
+        safeSetTimeout(() => setToast(null), TIMING.TOAST_DURATION);
+    }, [safeSetTimeout]);
 
     // All ingredients (built-in + custom)
     const allIngredients = useMemo(() => {
@@ -135,24 +150,23 @@ export const KitchenScreen: React.FC = () => {
 
         setIsSearching(true);
         try {
-            const response = await fetch(
-                `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&query=${encodeURIComponent(searchQuery)}&dataType=Foundation,SR%20Legacy&pageSize=20`
-            );
+            const response = await fetchWithTimeout(API_ENDPOINTS.usdaSearch(searchQuery));
 
             if (!response.ok) {
                 throw new Error('API request failed');
             }
 
             const data = await response.json();
+            if (!isMounted.current) return;
             setSearchResults(data.foods || []);
-        } catch (error) {
-            console.error('USDA search error:', error);
+        } catch {
+            if (!isMounted.current) return;
             showToast('Could not search USDA database', 'error');
             setSearchResults([]);
         } finally {
             setIsSearching(false);
         }
-    }, [searchQuery]);
+    }, [searchQuery, isMounted, showToast]);
 
     // Auto-search when typing (debounced)
     useEffect(() => {
@@ -181,15 +195,14 @@ export const KitchenScreen: React.FC = () => {
     const addFoodFromUSDA = useCallback(async (food: USDAFood) => {
         setIsLoadingDetails(true);
         try {
-            const response = await fetch(
-                `https://api.nal.usda.gov/fdc/v1/food/${food.fdcId}?api_key=${USDA_API_KEY}`
-            );
+            const response = await fetchWithTimeout(API_ENDPOINTS.usdaFoodDetail(food.fdcId));
 
             if (!response.ok) {
                 throw new Error('API request failed');
             }
 
             const data = await response.json();
+            if (!isMounted.current) return;
 
             // Find cup portion
             let density = 200; // Default fallback (grams per cup)
@@ -238,43 +251,36 @@ export const KitchenScreen: React.FC = () => {
             setSearchModalVisible(false);
             setSearchQuery('');
             setSearchResults([]);
-        } catch (error) {
-            console.error('USDA detail error:', error);
+        } catch {
+            if (!isMounted.current) return;
             showToast('Could not get ingredient details', 'error');
         } finally {
             setIsLoadingDetails(false);
         }
-    }, [customIngredients]);
+    }, [customIngredients, isMounted, showToast]);
 
-    const TabButton = ({ tab, label }: { tab: KitchenTab; label: string }) => (
-        <TouchableOpacity
-            onPress={() => setActiveTab(tab)}
-            style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-        >
-            <Text style={[styles.tabButtonText, activeTab === tab && styles.tabButtonTextActive]}>
-                {label}
-            </Text>
-        </TouchableOpacity>
+    const handleTabChange = useCallback((tab: KitchenTab) => {
+        setActiveTab(tab);
+    }, []);
+
+    // Memoized options to prevent unnecessary re-renders
+    const ingredientOptions = useMemo(() =>
+        allIngredients.map(i => ({
+            label: i.category === 'Custom (USDA)' ? `⭐ ${i.name}` : i.name,
+            value: i.id
+        })),
+        [allIngredients]
     );
 
-    const ingredientOptions = allIngredients.map(i => ({
-        label: i.category === 'Custom (USDA)' ? `⭐ ${i.name}` : i.name,
-        value: i.id
-    }));
-    const unitOptions = KITCHEN_UNITS.map(u => ({ label: u.label, value: u.id }));
+    const unitOptions = useMemo(() =>
+        KITCHEN_UNITS.map(u => ({ label: u.label, value: u.id })),
+        []
+    );
 
     const renderIngredients = () => (
         <View style={styles.content}>
             <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionLabel}>INGREDIENT</Text>
-                    <TouchableOpacity
-                        style={styles.addButton}
-                        onPress={() => setSearchModalVisible(true)}
-                    >
-                        <Plus size={20} color={colors.accent} />
-                    </TouchableOpacity>
-                </View>
+                <Text style={styles.sectionLabel}>INGREDIENT</Text>
                 <PickerButton
                     value={ingredient.name}
                     onPress={() => setIngredientModalVisible(true)}
@@ -286,13 +292,13 @@ export const KitchenScreen: React.FC = () => {
 
             <View style={styles.inputSection}>
                 <Text style={styles.inputLabel}>Amount</Text>
-                <TextInput
-                    style={styles.inputField}
+                <MarqueeInput
+                    containerStyle={styles.inputFieldContainer}
                     value={value}
                     onChangeText={setValue}
                     keyboardType="numeric"
                     placeholder="0"
-                    placeholderTextColor={colors.secondary}
+                    maxLength={15}
                 />
             </View>
 
@@ -335,7 +341,7 @@ export const KitchenScreen: React.FC = () => {
                         <Text style={styles.copiedText}>Copied!</Text>
                     </View>
                 )}
-                <Text style={styles.resultValue}>{result}</Text>
+                <Text style={[styles.resultValue, { fontSize: getDynamicFontSize(result) }]}>{result}</Text>
                 <Text style={styles.resultUnit}>
                     {KITCHEN_UNITS.find(u => u.id === toUnitId)?.label}
                 </Text>
@@ -352,9 +358,9 @@ export const KitchenScreen: React.FC = () => {
         // Define the data for each mode
         // COLORS: Active = colors.accent (Red), Inactive = colors.secondary (Gray)
         const modes = {
-            conventional: { label: 'Conventional Oven', value: `${conv}°C`, hint: 'Standard setting', id: 'conventional' },
-            fan: { label: 'Fan / Convection', value: `${fan}°C`, hint: 'Air circulation active', id: 'fan' },
-            fahrenheit: { label: 'Fahrenheit', value: `${faren}°F`, hint: 'US Recipes', id: 'fahrenheit' }
+            conventional: { label: 'Conventional Oven', value: `${conv}°C`, id: 'conventional' },
+            fan: { label: 'Fan / Convection', value: `${fan}°C`, id: 'fan' },
+            fahrenheit: { label: 'Fahrenheit', value: `${faren}°F`, id: 'fahrenheit' }
         };
 
         const current = modes[ovenMode];
@@ -377,6 +383,29 @@ export const KitchenScreen: React.FC = () => {
             setOvenTemp(Math.max(0, Math.min(300, newConv)));
         };
 
+        // Handle direct temperature input
+        const handleTempInput = (text: string) => {
+            const num = parseInt(text) || 0;
+            let newConv = num;
+
+            if (ovenMode === 'fan') {
+                // Fan shows conv - 20, so to set fan temp, add 20
+                newConv = num + 20;
+            } else if (ovenMode === 'fahrenheit') {
+                // Convert F to C
+                newConv = Math.round((num - 32) * 5 / 9);
+            }
+
+            setOvenTemp(Math.max(0, Math.min(300, newConv)));
+        };
+
+        // Get current numeric value for input
+        const getCurrentNumericValue = () => {
+            if (ovenMode === 'fahrenheit') return faren.toString();
+            if (ovenMode === 'fan') return fan.toString();
+            return conv.toString();
+        };
+
         // Helper to render a result card that acts as a mode switch
         const renderResultCard = (modeKey: 'conventional' | 'fan' | 'fahrenheit') => {
             if (modeKey === ovenMode) return null;
@@ -389,7 +418,6 @@ export const KitchenScreen: React.FC = () => {
                 >
                     <Text style={[styles.ovenResultLabel, { color: colors.secondary }]}>{m.label}</Text>
                     <Text style={[styles.ovenResultValue, { color: colors.primary }]}>{m.value}</Text>
-                    <Text style={styles.ovenResultHint}>Tap to switch</Text>
                 </TouchableOpacity>
             );
         };
@@ -407,13 +435,20 @@ export const KitchenScreen: React.FC = () => {
                                 <Minus size={24} color={colors.accent} />
                             </TouchableOpacity>
                             <View style={styles.ovenValueContainer}>
-                                <Text style={[styles.ovenMainValue, { color: colors.primary }]}>{current.value}</Text>
+                                <TextInput
+                                    style={styles.ovenMainInput}
+                                    value={getCurrentNumericValue()}
+                                    onChangeText={handleTempInput}
+                                    keyboardType="numeric"
+                                    maxLength={3}
+                                    selectTextOnFocus
+                                />
+                                <Text style={styles.ovenUnit}>{ovenMode === 'fahrenheit' ? '°F' : '°C'}</Text>
                             </View>
                             <TouchableOpacity onPress={() => adjustTemp(1)} style={[styles.tempButton, { backgroundColor: colors.accent + '20', borderColor: colors.subtle }]}>
                                 <Plus size={24} color={colors.accent} />
                             </TouchableOpacity>
                         </View>
-                        <Text style={styles.ovenHint}>{current.hint}</Text>
                     </View>
 
                     {/* Results / Switches */}
@@ -504,9 +539,6 @@ export const KitchenScreen: React.FC = () => {
                         )}
                     </View>
 
-                    <Text style={styles.searchHint}>
-                        Data from USDA FoodData Central
-                    </Text>
 
                     {isLoadingDetails && (
                         <View style={styles.loadingOverlay}>
@@ -531,7 +563,9 @@ export const KitchenScreen: React.FC = () => {
                                         {item.dataType} {item.brandName ? `• ${item.brandName}` : ''}
                                     </Text>
                                 </View>
-                                <Plus size={20} color={colors.accent} />
+                                <View style={styles.searchResultAddButton}>
+                                    <Plus size={18} color={colors.accent} />
+                                </View>
                             </TouchableOpacity>
                         )}
                         ListEmptyComponent={
@@ -557,9 +591,9 @@ export const KitchenScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.tabContainer}>
-                    <TabButton tab="ingredients" label="Ingredients" />
-                    <TabButton tab="oven" label="Oven" />
-                    <TabButton tab="special" label="Quick Ref" />
+                    <TabButton tab="ingredients" label="Ingredients" activeTab={activeTab} onPress={handleTabChange} />
+                    <TabButton tab="oven" label="Oven" activeTab={activeTab} onPress={handleTabChange} />
+                    <TabButton tab="special" label="Quick Ref" activeTab={activeTab} onPress={handleTabChange} />
                 </View>
 
                 {activeTab === 'ingredients' && renderIngredients()}
@@ -574,6 +608,10 @@ export const KitchenScreen: React.FC = () => {
                 options={ingredientOptions}
                 selectedValue={ingredientId}
                 onSelect={setIngredientId}
+                onAdd={() => {
+                    setIngredientModalVisible(false);
+                    setSearchModalVisible(true);
+                }}
             />
             <PickerModal
                 visible={fromModalVisible}
@@ -616,17 +654,17 @@ const styles = StyleSheet.create({
     scrollContent: { paddingHorizontal: 16, gap: 16 },
     tabContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     tabButton: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 14,
+        paddingHorizontal: 8,
         borderRadius: 12,
     },
     tabButtonActive: { backgroundColor: colors.accent },
@@ -636,28 +674,17 @@ const styles = StyleSheet.create({
     section: { gap: 8 },
     sectionLargeGap: { gap: 24 },
     ovenValueContainer: { alignItems: 'center' },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
     sectionLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
-    addButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
     densityInfo: { fontSize: 12, color: colors.secondary, marginLeft: 4 },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        padding: 20,
+        ...shadows.card,
         gap: 8,
     },
     inputLabel: { fontSize: 14, fontWeight: '500', color: colors.secondary },
-    inputField: { fontSize: 48, fontWeight: '300', color: colors.primary },
+    inputFieldContainer: { flex: 1, minHeight: 58 },
     unitsContainer: { gap: 12 },
     unitField: { gap: 8 },
     unitLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, letterSpacing: 1, marginLeft: 4 },
@@ -665,12 +692,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         paddingHorizontal: 16,
         paddingVertical: 18,
+        ...shadows.card,
     },
     staticPickerButtonText: {
         fontSize: 16,
@@ -679,23 +705,21 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     resultContainer: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 24,
         alignItems: 'center',
         gap: 8,
+        ...shadows.card,
     },
     resultValue: { fontSize: 48, fontWeight: '600', color: colors.primary },
     resultUnit: { fontSize: 18, color: colors.secondary },
     specialCard: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
+        backgroundColor: colors.card,
+        borderRadius: 20,
         padding: 24,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 16,
+        ...shadows.card,
     },
     specialTitle: { fontSize: 18, fontWeight: '600', color: colors.primary, marginBottom: 8 },
     specialItem: { gap: 4 },
@@ -718,7 +742,6 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     searchInput: { flex: 1, color: colors.primary, fontSize: 16, paddingVertical: 16 },
-    searchHint: { fontSize: 12, color: colors.secondary, textAlign: 'center', marginBottom: 16 },
     searchResultItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -732,6 +755,16 @@ const styles = StyleSheet.create({
     searchResultInfo: { flex: 1 },
     searchResultName: { fontSize: 15, fontWeight: '500', color: colors.primary },
     searchResultType: { fontSize: 12, color: colors.secondary, marginTop: 4 },
+    searchResultAddButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.subtle,
+    },
     noResults: { color: colors.secondary, textAlign: 'center', padding: 40 },
     loadingOverlay: {
         position: 'absolute',
@@ -747,29 +780,28 @@ const styles = StyleSheet.create({
     loadingText: { color: colors.primary, marginTop: 16, fontSize: 16 },
 
     // Oven Converter Styles
-    ovenControlCard: { backgroundColor: colors.input, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.subtle, gap: 16 },
+    ovenControlCard: { backgroundColor: colors.card, borderRadius: 24, padding: 24, gap: 16, ...shadows.card },
     ovenControlLabel: { fontSize: 14, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' },
     ovenControlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
     tempButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.subtle + '40', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.subtle },
-    ovenMainValue: { fontSize: 56, fontWeight: '300', color: colors.primary },
-    ovenHint: { fontSize: 13, color: colors.secondary, textAlign: 'center', marginTop: 8 },
-
+    ovenMainInput: { fontSize: 56, fontWeight: '300', color: colors.primary, textAlign: 'center', minWidth: 100 },
+    ovenUnit: { fontSize: 24, fontWeight: '300', color: colors.primary },
     ovenResultsRow: { flexDirection: 'row', gap: 12 },
-    ovenResultCard: { flex: 1, backgroundColor: colors.input, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.subtle, alignItems: 'center', gap: 4 },
+    ovenResultCard: { flex: 1, backgroundColor: colors.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 4, ...shadows.card },
     ovenResultLabel: { fontSize: 11, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
     ovenResultValue: { fontSize: 28, fontWeight: '600', color: colors.primary, marginTop: 4 },
-    ovenResultHint: { fontSize: 11, color: colors.secondary, textAlign: 'center' },
     copiedBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 12,
+        right: 12,
         backgroundColor: colors.accent,
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 12,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 12,
         fontWeight: '600',
     },
@@ -784,15 +816,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderRadius: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         alignItems: 'center',
+        ...shadows.card,
     },
     toastError: {
-        borderColor: colors.accent,
+        backgroundColor: colors.card,
     },
     toastSuccess: {
         backgroundColor: colors.accent,
+        ...shadows.glow,
     },
     toastText: {
         color: colors.primary,

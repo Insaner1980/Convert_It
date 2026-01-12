@@ -12,6 +12,9 @@ export const SHOE_SIZES_MEN: SizeRow[] = [
   { label: '45', eu: '45', us: '11', uk: '10', cm: '29' },
   { label: '46', eu: '46', us: '12', uk: '11', cm: '30' },
   { label: '47', eu: '47', us: '13', uk: '12', cm: '31' },
+  { label: '48', eu: '48', us: '14', uk: '13', cm: '32' },
+  { label: '49', eu: '49', us: '15', uk: '14', cm: '33' },
+  { label: '50', eu: '50', us: '16', uk: '15', cm: '34' },
 ];
 
 export const SHOE_SIZES_WOMEN: SizeRow[] = [
@@ -23,6 +26,9 @@ export const SHOE_SIZES_WOMEN: SizeRow[] = [
   { label: '40', eu: '40', us: '9', uk: '6.5', cm: '25.5' },
   { label: '41', eu: '41', us: '9.5', uk: '7', cm: '26' },
   { label: '42', eu: '42', us: '10', uk: '7.5', cm: '26.5' },
+  { label: '43', eu: '43', us: '11', uk: '8.5', cm: '27.5' },
+  { label: '44', eu: '44', us: '12', uk: '9.5', cm: '28.5' },
+  { label: '45', eu: '45', us: '13', uk: '10.5', cm: '29.5' },
 ];
 
 export const SHOE_SIZES_KIDS: SizeRow[] = [
@@ -45,6 +51,9 @@ export const CLOTHING_WOMEN_TOPS: SizeRow[] = [
   { label: 'L', eu: '44-46', us: '12-14', uk: '16-18', it: '48' },
   { label: 'XL', eu: '48-50', us: '16-18', uk: '20-22', it: '52' },
   { label: 'XXL', eu: '52-54', us: '20-22', uk: '24-26', it: '56' },
+  { label: '3XL', eu: '56-58', us: '24-26', uk: '28-30', it: '60' },
+  { label: '4XL', eu: '60-62', us: '28-30', uk: '32-34', it: '64' },
+  { label: '5XL', eu: '64-66', us: '32-34', uk: '36-38', it: '68' },
 ];
 
 export const CLOTHING_WOMEN_BOTTOMS: SizeRow[] = [
@@ -53,17 +62,24 @@ export const CLOTHING_WOMEN_BOTTOMS: SizeRow[] = [
   { label: 'M', eu: '38', us: '28-29"', uk: '10', cm: '70-74' },
   { label: 'L', eu: '40', us: '30-32"', uk: '12', cm: '75-80' },
   { label: 'XL', eu: '42', us: '33-35"', uk: '14', cm: '81-86' },
+  { label: 'XXL', eu: '44', us: '36-38"', uk: '16', cm: '87-92' },
+  { label: '3XL', eu: '46-48', us: '39-41"', uk: '18-20', cm: '93-100' },
+  { label: '4XL', eu: '50-52', us: '42-44"', uk: '22-24', cm: '101-110' },
+  { label: '5XL', eu: '54-56', us: '45-48"', uk: '26-28', cm: '111-120' },
 ];
 
 // --- CLOTHING - MEN ---
 
 export const CLOTHING_MEN_TOPS: SizeRow[] = [
+  { label: 'XS', eu: '44', us: '34', uk: '34', cm: '84-89' },
   { label: 'S', eu: '46', us: '36', uk: '36', cm: '90-95' },
   { label: 'M', eu: '48', us: '38', uk: '38', cm: '96-101' },
   { label: 'L', eu: '50', us: '40', uk: '40', cm: '102-107' },
   { label: 'XL', eu: '52', us: '42', uk: '42', cm: '108-113' },
   { label: 'XXL', eu: '54', us: '44', uk: '44', cm: '114-119' },
   { label: '3XL', eu: '56', us: '46', uk: '46', cm: '120-125' },
+  { label: '4XL', eu: '58', us: '48', uk: '48', cm: '126-131' },
+  { label: '5XL', eu: '60', us: '50', uk: '50', cm: '132-137' },
 ];
 
 export const CLOTHING_MEN_PANTS: SizeRow[] = [
@@ -73,6 +89,9 @@ export const CLOTHING_MEN_PANTS: SizeRow[] = [
   { label: 'L', eu: '48', us: '34"', uk: '34', cm: '86' },
   { label: 'XL', eu: '52', us: '36"', uk: '36', cm: '91.5' },
   { label: 'XXL', eu: '54', us: '38"', uk: '38', cm: '96.5' },
+  { label: '3XL', eu: '56', us: '40"', uk: '40', cm: '101.5' },
+  { label: '4XL', eu: '58-60', us: '42-44"', uk: '42-44', cm: '107-112' },
+  { label: '5XL', eu: '62-64', us: '46-48"', uk: '46-48', cm: '117-122' },
 ];
 
 // --- CLOTHING - KIDS ---
@@ -92,8 +111,8 @@ export const CLOTHING_KIDS: SizeRow[] = [
 
 // --- BRA DATA ---
 
-export const BRA_BANDS_EU = [65, 70, 75, 80, 85, 90, 95, 100, 105];
-export const BRA_CUPS_EU = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+export const BRA_BANDS_EU = [60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120];
+export const BRA_CUPS_EU = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
 // Maps EU Band to others
 export const BRA_BAND_MAP: Record<number, { us: number; fr: number; au: number }> = {
@@ -107,6 +126,9 @@ export const BRA_BAND_MAP: Record<number, { us: number; fr: number; au: number }
   95: { us: 42, fr: 110, au: 20 },
   100: { us: 44, fr: 115, au: 22 },
   105: { us: 46, fr: 120, au: 24 },
+  110: { us: 48, fr: 125, au: 26 },
+  115: { us: 50, fr: 130, au: 28 },
+  120: { us: 52, fr: 135, au: 30 },
 };
 
 // Simplified Cup Map (Approximation)
@@ -120,4 +142,8 @@ export const BRA_CUP_MAP: Record<string, { us: string; uk: string }> = {
   'F': { us: 'DDD/F', uk: 'E' },
   'G': { us: 'G', uk: 'F' },
   'H': { us: 'H', uk: 'FF' },
+  'I': { us: 'I', uk: 'G' },
+  'J': { us: 'J', uk: 'GG' },
+  'K': { us: 'K', uk: 'H' },
+  'L': { us: 'L', uk: 'HH' },
 };

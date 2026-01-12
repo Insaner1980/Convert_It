@@ -5,6 +5,7 @@ import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { ChevronDown } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { shadows } from '../theme';
 import { AnimatedPressable } from './AnimatedPressable';
 
 interface PickerButtonProps {
@@ -25,12 +26,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         paddingHorizontal: 16,
         paddingVertical: 18,
+        ...shadows.card,
     },
     pickerButtonText: {
         fontSize: 16,

@@ -2,10 +2,12 @@
 // Convert between different yeast types
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 type YeastType = 'fresh' | 'active' | 'instant';
 
@@ -19,9 +21,10 @@ export const YeastConverter: React.FC = () => {
     const [amount, setAmount] = useState('');
     const [fromType, setFromType] = useState<YeastType>('fresh');
     const [copiedType, setCopiedType] = useState<YeastType | null>(null);
+    const { copyToClipboard } = useClipboard();
 
-    const copyToClipboard = async (text: string, type: YeastType) => {
-        await Clipboard.setStringAsync(text);
+    const handleCopy = async (text: string, type: YeastType) => {
+        await copyToClipboard(text);
         setCopiedType(type);
         setTimeout(() => setCopiedType(null), 1500);
     };
@@ -46,13 +49,15 @@ export const YeastConverter: React.FC = () => {
             {/* Input */}
             <View style={styles.inputSection}>
                 <View style={styles.inputRow}>
-                    <TextInput
-                        style={styles.input}
+                    <MarqueeInput
+                        containerStyle={styles.inputContainer}
+                        inputStyle={styles.inputStyle}
+                        fontSize={40}
                         value={amount}
                         onChangeText={setAmount}
                         keyboardType="numeric"
                         placeholder="0"
-                        placeholderTextColor={colors.secondary}
+                        maxLength={10}
                     />
                     <Text style={styles.inputUnit}>g</Text>
                 </View>
@@ -92,7 +97,7 @@ export const YeastConverter: React.FC = () => {
                                 styles.resultCard,
                                 conv.id === fromType && styles.resultCardActive
                             ]}
-                            onPress={() => copyToClipboard(`${conv.amount}g`, conv.id)}
+                            onPress={() => handleCopy(`${conv.amount}g`, conv.id)}
                             activeOpacity={0.7}
                         >
                             {copiedType === conv.id && (
@@ -112,9 +117,6 @@ export const YeastConverter: React.FC = () => {
                 </View>
             )}
 
-            <Text style={styles.hint}>
-                Fresh yeast = 2.5× Active Dry = 3× Instant
-            </Text>
         </View>
     );
 };
@@ -129,25 +131,22 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     inputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 8,
     },
-    input: {
-        fontFamily,
-        fontSize: 40,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 50,
+    },
+    inputStyle: {
         textAlign: 'center',
-        minWidth: 100,
     },
     inputUnit: {
         fontFamily,
@@ -156,15 +155,15 @@ const styles = StyleSheet.create({
     },
     typeSelector: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     typeButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 12,
+        paddingHorizontal: 8,
         alignItems: 'center',
         borderRadius: 12,
     },
@@ -184,17 +183,16 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     resultCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        ...shadows.card,
     },
     resultCardActive: {
-        borderColor: colors.accent,
+        backgroundColor: colors.accent + '20',
     },
     resultLabel: {
         fontFamily,
@@ -210,13 +208,6 @@ const styles = StyleSheet.create({
     resultValueActive: {
         color: colors.accent,
     },
-    hint: {
-        fontFamily,
-        fontSize: 11,
-        color: colors.secondary,
-        textAlign: 'center',
-        fontStyle: 'italic',
-    },
     copiedBadge: {
         position: 'absolute',
         top: 4,
@@ -226,9 +217,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

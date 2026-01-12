@@ -2,7 +2,7 @@
 
 **Project:** UnitX - Premium Mobile Conversion Utility
 **Platform:** React Native (Expo) + TypeScript
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-10
 
 ---
 
@@ -26,16 +26,17 @@
 
 ## Project Overview
 
-UnitX is a **premium dark-themed mobile app** with red accent color for unit conversions, size charts, kitchen tools, currency exchange, and utility tools.
+UnitX is a **premium warm dark-themed mobile app** with copper/terracotta accent color for unit conversions, size charts, kitchen tools, currency exchange, and utility tools.
 
 **Design Principles:**
 - **Minimalism** - Clean, distraction-free interface
 - **Precision** - Accurate calculations, professional typography
 - **Speed** - Fast, responsive, 60fps animations
 - **Privacy** - No tracking, no server dependencies (except APIs)
+- **Depth** - Subtle shadows for visual hierarchy
 
 **Target Device:** Google Pixel 9 (Android)
-**Design Language:** Dark theme with red (#A30000) accent
+**Design Language:** Premium Warm Dark with copper (#c9785d) accent
 **Logo:** Two arrows (→←) - shown only on main screen header
 
 ---
@@ -119,28 +120,50 @@ UnitX/
 
 ## Color System
 
-**Always import colors:**
+**Always import colors and shadows:**
 ```typescript
 import { colors } from '../theme/colors';
+import { shadows } from '../theme';
 ```
 
 ```typescript
-// colors.ts
+// colors.ts - Premium Warm Dark theme
 {
-  main: '#000000',        // App background
-  card: '#0f0f0f',        // Cards, bottom bar
-  input: '#1a1a1a',       // Input fields
-  subtle: '#262626',      // Borders
-  primary: '#ffffff',     // Primary text
-  secondary: '#6b6b6b',   // Secondary text
-  accent: '#A30000',      // Red - active states, highlights
-  accentHover: '#7a0000', // Darker red - hover states
+  // Backgrounds - warm dark grays (not pure black)
+  main: '#141416',        // Main background - warm charcoal
+  card: '#1c1c1e',        // Card background - elevated surface
+  input: '#242426',       // Input fields - subtle lift
+  subtle: '#38383a',      // Borders - soft definition
+
+  // Text
+  primary: '#f5f5f7',     // Primary text - warm white
+  secondary: '#86868b',   // Secondary text - balanced gray
+
+  // Accent - warm copper/terracotta
+  accent: '#c9785d',      // Primary accent - warm copper
+  accentMuted: '#c9785d20', // Muted accent for backgrounds
+  accentHover: '#b56a50', // Hover state
+
+  // Utility
+  overlay: 'rgba(0,0,0,0.75)',
+  elevated: '#2c2c2e',    // Elevated surfaces
+  highlight: '#48484a',   // Focus states
 }
 ```
 
 **Active/Inactive Pattern:**
-- Active: `backgroundColor: colors.accent` (red), `color: colors.primary` (white)
+- Active: `backgroundColor: colors.accent` (copper), `color: colors.primary` (warm white)
 - Inactive: `backgroundColor: transparent`, `color: colors.secondary`
+
+**Add (+) Icons:**
+- Use `colors.accent` (copper) for Plus/Minus icons - NOT `colors.primary`
+
+**Shadows (import from theme):**
+```typescript
+shadows.card   // Cards, inputs - subtle depth
+shadows.button // Buttons - lighter shadow
+shadows.glow   // Accent elements - copper glow
+```
 
 ### Spacing
 - Screen padding: **16px**
@@ -188,9 +211,10 @@ copiedBadge: {
     paddingVertical: 2,
     borderRadius: 8,
     zIndex: 1,
+    ...shadows.glow,  // Copper glow effect
 },
 copiedText: {
-    color: colors.main,
+    color: colors.primary,
     fontSize: 10,
     fontWeight: '600',
 },
@@ -222,14 +246,16 @@ export const ParentComponent = () => {
 ### Styling a New Component
 
 ```typescript
+import { colors } from '../theme/colors';
+import { shadows } from '../theme';
+
 const styles = StyleSheet.create({
     container: { gap: 16 },
     card: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,  // Always add shadow for depth
     },
     activeButton: {
         backgroundColor: colors.accent,
@@ -238,7 +264,7 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
     },
     activeButtonText: {
-        color: colors.primary,  // White text on red background
+        color: colors.primary,  // Warm white on copper
         fontWeight: '600',
     },
 });
@@ -263,6 +289,32 @@ const styles = StyleSheet.create({
     <Text>{label}</Text>
 </TouchableOpacity>
 ```
+
+### Dynamic Button Sizing (flexGrow)
+
+**Use `flexGrow: 1` instead of `flex: 1` for tab/category buttons:**
+
+```typescript
+// BAD - flex: 1 makes all buttons same width (cramps long text)
+tabButton: {
+    flex: 1,  // ❌ All buttons same size
+    ...
+}
+
+// GOOD - flexGrow: 1 fills space but respects content width
+tabButton: {
+    flexGrow: 1,  // ✅ Buttons fill space proportionally
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderRadius: 12,
+}
+```
+
+This ensures:
+- Buttons fill the full container width (no empty space on right)
+- Longer labels ("Temperature") get proportionally more space than short ones ("Speed")
+- Text is never cramped against edges
 
 ### ConfirmDialog Usage
 
@@ -314,6 +366,8 @@ const handleRemove = (id: string, name: string) => {
 9. ❌ **Don't use Alert.alert for destructive actions** - Use ConfirmDialog component
 10. ❌ **Don't add icons to tab/category buttons** - Text only for consistent spacing
 11. ❌ **Don't use black text on red background** - Use white (`colors.primary`)
+12. ❌ **Don't use `flex: 1` for tab buttons** - Use `flexGrow: 1` for dynamic sizing
+13. ❌ **Don't use white for + icons** - Use `colors.accent` (red)
 
 ---
 
@@ -397,4 +451,4 @@ Before delivering:
 
 ---
 
-**Last Updated:** 2026-01-09
+**Last Updated:** 2026-01-10

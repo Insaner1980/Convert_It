@@ -11,8 +11,9 @@ import {
     Pressable,
     StyleSheet,
 } from 'react-native';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, Plus } from 'lucide-react-native';
 import { colors } from '../theme/colors';
+import { shadows } from '../theme';
 
 export interface PickerOption {
     label: string;
@@ -26,6 +27,7 @@ interface PickerModalProps {
     options: PickerOption[];
     selectedValue: string;
     onSelect: (value: string) => void;
+    onAdd?: () => void;
 }
 
 export const PickerModal: React.FC<PickerModalProps> = ({
@@ -35,6 +37,7 @@ export const PickerModal: React.FC<PickerModalProps> = ({
     options,
     selectedValue,
     onSelect,
+    onAdd,
 }) => {
     return (
         <Modal
@@ -77,6 +80,13 @@ export const PickerModal: React.FC<PickerModalProps> = ({
                             </TouchableOpacity>
                         )}
                     />
+                    {onAdd && (
+                        <TouchableOpacity style={styles.addButton} onPress={onAdd}>
+                            <View style={styles.addButtonIcon}>
+                                <Plus size={18} color={colors.accent} />
+                            </View>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </Pressable>
         </Modal>
@@ -126,5 +136,24 @@ const styles = StyleSheet.create({
     modalOptionTextSelected: {
         color: colors.accent,
         fontWeight: '600',
+    },
+    addButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: colors.subtle,
+        backgroundColor: colors.elevated,
+    },
+    addButtonIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.card,
+        alignItems: 'center',
+        justifyContent: 'center',
+        ...shadows.button,
     },
 });

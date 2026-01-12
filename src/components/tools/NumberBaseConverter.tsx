@@ -2,10 +2,12 @@
 // Convert between decimal, binary, octal, and hexadecimal
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 type Base = 2 | 8 | 10 | 16;
 type CopiedBase = Base | null;
@@ -21,9 +23,10 @@ export const NumberBaseConverter: React.FC = () => {
     const [inputBase, setInputBase] = useState<Base>(10);
     const [inputValue, setInputValue] = useState('');
     const [copiedBase, setCopiedBase] = useState<CopiedBase>(null);
+    const { copyToClipboard } = useClipboard();
 
-    const copyToClipboard = async (text: string, base: Base) => {
-        await Clipboard.setStringAsync(text);
+    const handleCopy = async (text: string, base: Base) => {
+        await copyToClipboard(text);
         setCopiedBase(base);
         setTimeout(() => setCopiedBase(null), 1500);
     };
@@ -94,26 +97,26 @@ export const NumberBaseConverter: React.FC = () => {
                 <Text style={styles.label}>
                     INPUT ({BASES.find(b => b.id === inputBase)?.label.toUpperCase()})
                 </Text>
-                <TextInput
-                    style={styles.input}
+                <MarqueeInput
+                    containerStyle={styles.inputContainer}
                     value={inputValue}
                     onChangeText={handleInputChange}
                     placeholder="0"
-                    placeholderTextColor={colors.secondary}
                     autoCapitalize="characters"
-                    keyboardType={inputBase === 10 ? 'numeric' : 'default'}
+                    keyboardType={inputBase === 16 ? 'default' : 'numeric'}
+                    maxLength={32}
                 />
             </View>
 
-            {/* Results */}
+            {/* Results - show only other bases, not the input base */}
             <View style={styles.resultsGrid}>
-                {BASES.map((base) => {
+                {BASES.filter((base) => base.id !== inputBase).map((base) => {
                     const value = `${base.prefix}${conversions?.[base.id] || '0'}`;
                     return (
                         <TouchableOpacity
                             key={base.id}
                             style={styles.resultCard}
-                            onPress={() => copyToClipboard(value, base.id)}
+                            onPress={() => handleCopy(value, base.id)}
                             activeOpacity={0.7}
                         >
                             {copiedBase === base.id && (
@@ -135,16 +138,15 @@ const styles = StyleSheet.create({
     container: { gap: 16 },
     baseContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     baseButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 12,
-        paddingHorizontal: 6,
+        paddingHorizontal: 8,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
@@ -163,12 +165,11 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -177,36 +178,37 @@ const styles = StyleSheet.create({
         color: colors.secondary,
         letterSpacing: 1,
     },
-    input: {
-        fontFamily,
-        fontSize: 32,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 44,
     },
     resultsGrid: {
         gap: 8,
     },
     resultCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
         fontSize: 12,
         fontWeight: '600',
         color: colors.secondary,
+        flexShrink: 0,
     },
     resultValue: {
         fontFamily,
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
         color: colors.primary,
+        flex: 1,
+        textAlign: 'right',
+        marginLeft: 12,
     },
     copiedBadge: {
         position: 'absolute',
@@ -217,9 +219,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

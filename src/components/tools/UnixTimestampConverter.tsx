@@ -2,19 +2,22 @@
 // Convert between Unix timestamp and human-readable date
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
 import { AnimatedPressable } from '../AnimatedPressable';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 export const UnixTimestampConverter: React.FC = () => {
     const [timestamp, setTimestamp] = useState('');
     const [currentTime, setCurrentTime] = useState(Date.now());
     const [copiedField, setCopiedField] = useState<string | null>(null);
+    const { copyToClipboard } = useClipboard();
 
-    const copyToClipboard = async (text: string, field: string) => {
-        await Clipboard.setStringAsync(text);
+    const handleCopy = async (text: string, field: string) => {
+        await copyToClipboard(text);
         setCopiedField(field);
         setTimeout(() => setCopiedField(null), 1500);
     };
@@ -77,7 +80,7 @@ export const UnixTimestampConverter: React.FC = () => {
             {/* Current Time Display */}
             <TouchableOpacity
                 style={styles.currentTimeCard}
-                onPress={() => copyToClipboard(currentUnix.toString(), 'current')}
+                onPress={() => handleCopy(currentUnix.toString(), 'current')}
                 activeOpacity={0.7}
             >
                 {copiedField === 'current' && (
@@ -97,13 +100,13 @@ export const UnixTimestampConverter: React.FC = () => {
                         <Text style={styles.nowButtonText}>Use Now</Text>
                     </AnimatedPressable>
                 </View>
-                <TextInput
-                    style={styles.input}
+                <MarqueeInput
+                    containerStyle={styles.inputContainer}
                     value={timestamp}
                     onChangeText={setTimestamp}
                     keyboardType="numeric"
                     placeholder="e.g. 1704067200"
-                    placeholderTextColor={colors.secondary}
+                    maxLength={13}
                 />
             </View>
 
@@ -112,7 +115,7 @@ export const UnixTimestampConverter: React.FC = () => {
                 <View style={styles.results}>
                     <TouchableOpacity
                         style={styles.resultCard}
-                        onPress={() => copyToClipboard(parseResult.local, 'local')}
+                        onPress={() => handleCopy(parseResult.local, 'local')}
                         activeOpacity={0.7}
                     >
                         {copiedField === 'local' && (
@@ -125,7 +128,7 @@ export const UnixTimestampConverter: React.FC = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.resultCard}
-                        onPress={() => copyToClipboard(parseResult.utc, 'utc')}
+                        onPress={() => handleCopy(parseResult.utc, 'utc')}
                         activeOpacity={0.7}
                     >
                         {copiedField === 'utc' && (
@@ -138,7 +141,7 @@ export const UnixTimestampConverter: React.FC = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.resultCard}
-                        onPress={() => copyToClipboard(parseResult.iso, 'iso')}
+                        onPress={() => handleCopy(parseResult.iso, 'iso')}
                         activeOpacity={0.7}
                     >
                         {copiedField === 'iso' && (
@@ -151,7 +154,7 @@ export const UnixTimestampConverter: React.FC = () => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.resultCard}
-                        onPress={() => copyToClipboard(parseResult.relative, 'relative')}
+                        onPress={() => handleCopy(parseResult.relative, 'relative')}
                         activeOpacity={0.7}
                     >
                         {copiedField === 'relative' && (
@@ -176,6 +179,7 @@ const styles = StyleSheet.create({
         padding: 16,
         alignItems: 'center',
         gap: 4,
+        ...shadows.glow,
     },
     currentLabel: {
         fontFamily,
@@ -193,12 +197,11 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     inputHeader: {
         flexDirection: 'row',
@@ -224,22 +227,19 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: colors.accent,
     },
-    input: {
-        fontFamily,
-        fontSize: 24,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 36,
     },
     results: {
         gap: 8,
     },
     resultCard: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 4,
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
@@ -257,11 +257,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 8,
         right: 8,
-        backgroundColor: colors.main,
+        backgroundColor: colors.card,
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 12,
         zIndex: 1,
+        ...shadows.card,
     },
     copiedBadgeSmall: {
         position: 'absolute',
@@ -272,9 +273,10 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
         borderRadius: 8,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 10,
         fontWeight: '600',
     },

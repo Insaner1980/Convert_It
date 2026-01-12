@@ -99,3 +99,17 @@ export const textStyles = {
         letterSpacing: 2,
     } as TextStyle,
 };
+
+/**
+ * Get dynamic font size based on text length
+ * Ensures long numbers (like 0.000002204) fit in the display
+ * @param text - The text/number to display
+ * @param baseSize - Default font size for short text (default: 48)
+ * @returns Appropriate font size
+ */
+export const getDynamicFontSize = (text: string, baseSize: number = 48): number => {
+    const length = text.length;
+    if (length > 15) return Math.min(baseSize, 20);
+    if (length > 10) return Math.min(baseSize, 28);
+    return baseSize;
+};

@@ -21,6 +21,7 @@ import {
 import { Gender, SizeCategory, SizeRow } from '../types';
 import { colors } from '../theme/colors';
 import { fontFamily } from '../theme/typography';
+import { shadows } from '../theme';
 import { PickerButton } from '../components/PickerButton';
 
 const REGIONS = [
@@ -216,7 +217,9 @@ export const SizesScreen: React.FC = () => {
                 </View>
 
                 {/* Output Region Selection - NOW INTERACTIVE */}
-                <Text style={styles.sectionTitle}>SELECT OUTPUT REGION</Text>
+                <View style={styles.outputRegionHeader}>
+                    <Text style={styles.outputRegionHeaderText}>SELECT OUTPUT REGION</Text>
+                </View>
                 {REGIONS.filter(region => region.id !== inputRegion).map(region => {
                     const isSelected = outputRegion === region.id;
                     return (
@@ -229,19 +232,12 @@ export const SizesScreen: React.FC = () => {
                             onPress={() => setOutputRegion(region.id)}
                             activeOpacity={0.7}
                         >
-                            <View style={styles.resultRowLeft}>
-                                <Text style={[
-                                    styles.resultRowLabel,
-                                    isSelected && styles.resultRowLabelSelected
-                                ]}>
-                                    {region.label}
-                                </Text>
-                                {isSelected && (
-                                    <View style={styles.selectedBadge}>
-                                        <Text style={styles.selectedBadgeText}>SELECTED</Text>
-                                    </View>
-                                )}
-                            </View>
+                            <Text style={[
+                                styles.resultRowLabel,
+                                isSelected && styles.resultRowLabelSelected
+                            ]}>
+                                {region.label}
+                            </Text>
                             <Text style={[
                                 styles.resultRowValue,
                                 isSelected && styles.resultRowValueSelected
@@ -298,7 +294,15 @@ export const SizesScreen: React.FC = () => {
                 <View style={styles.tableHeader}>
                     <Text style={[styles.tableHeaderCell, styles.tableLabelCell]}>Size</Text>
                     {headerKeys.map(k => (
-                        <Text key={k} style={styles.tableHeaderCell}>{k.toUpperCase()}</Text>
+                        <Text
+                            key={k}
+                            style={[
+                                styles.tableHeaderCell,
+                                k === 'cm' && styles.tableCmCell
+                            ]}
+                        >
+                            {k.toUpperCase()}
+                        </Text>
                     ))}
                 </View>
 
@@ -307,7 +311,16 @@ export const SizesScreen: React.FC = () => {
                     <View key={idx} style={styles.tableRow}>
                         <Text style={[styles.tableCell, styles.tableLabelCell, styles.tableCellLabel]}>{row.label}</Text>
                         {headerKeys.map(k => (
-                            <Text key={k} style={styles.tableCell}>{row[k]}</Text>
+                            <Text
+                                key={k}
+                                style={[
+                                    styles.tableCell,
+                                    k === 'cm' && styles.tableCmCell
+                                ]}
+                                numberOfLines={1}
+                            >
+                                {row[k]}
+                            </Text>
                         ))}
                     </View>
                 ))}
@@ -319,7 +332,7 @@ export const SizesScreen: React.FC = () => {
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Size Charts</Text>
+                <Text style={styles.headerTitle}>Sizes</Text>
             </View>
 
             <ScrollView
@@ -404,15 +417,15 @@ const styles = StyleSheet.create({
     },
     genderContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     genderButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 14,
+        paddingHorizontal: 8,
         alignItems: 'center',
         borderRadius: 12,
     },
@@ -429,17 +442,17 @@ const styles = StyleSheet.create({
     },
     categoryContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     categoryPill: {
-        flex: 1,
+        flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 12,
+        paddingHorizontal: 8,
         borderRadius: 12,
     },
     categoryPillActive: {
@@ -454,11 +467,10 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     tableContainer: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         overflow: 'hidden',
+        ...shadows.card,
     },
     tableHeader: {
         flexDirection: 'row',
@@ -491,6 +503,9 @@ const styles = StyleSheet.create({
         color: colors.secondary,
         textAlign: 'center',
     },
+    tableCmCell: {
+        flex: 1.3,
+    },
     tableCellLabel: {
         fontWeight: '700',
         color: colors.primary,
@@ -504,12 +519,11 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     braControls: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 16,
+        ...shadows.card,
     },
     braRow: {
         flexDirection: 'row',
@@ -529,54 +543,39 @@ const styles = StyleSheet.create({
         letterSpacing: 1,
         marginLeft: 4,
     },
-    sectionTitle: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: colors.secondary,
+    outputRegionHeader: {
+        backgroundColor: colors.accent,
+        borderRadius: 12,
+        padding: 12,
+        alignItems: 'center',
+    },
+    outputRegionHeaderText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.primary,
         letterSpacing: 1,
-        marginTop: 8,
-        marginLeft: 4,
     },
     // Result Rows - NOW INTERACTIVE
     resultRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 20,
-        borderWidth: 1, // Reduced width slightly for elegance? Or keep 2? User likes yellow borders.
-        borderColor: colors.subtle, // ALWAYS YELLOW
+        ...shadows.card,
     },
     resultRowSelected: {
-        // Border is already yellow
-        backgroundColor: colors.accent + '10', // Very subtle tint
-    },
-    resultRowLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+        backgroundColor: colors.accent,
     },
     resultRowLabel: {
         fontSize: 14,
         fontWeight: '500',
-        color: colors.secondary, // Inactive Gray
+        color: colors.secondary,
     },
     resultRowLabelSelected: {
-        color: colors.primary, // Active White
+        color: colors.primary,
         fontWeight: '700',
-    },
-    selectedBadge: {
-        backgroundColor: colors.accent,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 6,
-    },
-    selectedBadgeText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: colors.main,
-        letterSpacing: 0.5,
     },
     resultRowValue: {
         fontSize: 24,

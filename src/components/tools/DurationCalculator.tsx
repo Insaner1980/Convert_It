@@ -3,9 +3,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
-import * as Clipboard from 'expo-clipboard';
 import { colors } from '../../theme/colors';
 import { fontFamily } from '../../theme/typography';
+import { shadows } from '../../theme';
+import { useClipboard } from '../../hooks';
+import { MarqueeInput } from '../MarqueeInput';
 
 type Mode = 'breakdown' | 'add' | 'diff';
 
@@ -31,6 +33,7 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, h, m, s, setH, setM, setS 
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.secondary}
+                    maxLength={4}
                 />
                 <Text style={styles.timeUnit}>h</Text>
             </View>
@@ -43,6 +46,7 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, h, m, s, setH, setM, setS 
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.secondary}
+                    maxLength={2}
                 />
                 <Text style={styles.timeUnit}>m</Text>
             </View>
@@ -55,6 +59,7 @@ const TimeInput: React.FC<TimeInputProps> = ({ label, h, m, s, setH, setM, setS 
                     keyboardType="numeric"
                     placeholder="0"
                     placeholderTextColor={colors.secondary}
+                    maxLength={2}
                 />
                 <Text style={styles.timeUnit}>s</Text>
             </View>
@@ -71,13 +76,7 @@ export const DurationCalculator: React.FC = () => {
     const [hours2, setHours2] = useState('');
     const [minutes2, setMinutes2] = useState('');
     const [seconds2, setSeconds2] = useState('');
-    const [copied, setCopied] = useState(false);
-
-    const copyToClipboard = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
+    const { copied, copyToClipboard } = useClipboard();
 
     const breakdownResult = useMemo(() => {
         const total = parseInt(totalSeconds);
@@ -164,13 +163,13 @@ export const DurationCalculator: React.FC = () => {
                 <>
                     <View style={styles.inputSection}>
                         <Text style={styles.label}>TOTAL SECONDS</Text>
-                        <TextInput
-                            style={styles.input}
+                        <MarqueeInput
+                            containerStyle={styles.inputContainer}
                             value={totalSeconds}
                             onChangeText={setTotalSeconds}
                             keyboardType="numeric"
                             placeholder="3661"
-                            placeholderTextColor={colors.secondary}
+                            maxLength={15}
                         />
                     </View>
 
@@ -249,16 +248,15 @@ const styles = StyleSheet.create({
     container: { gap: 16 },
     modeContainer: {
         flexDirection: 'row',
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 4,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.card,
     },
     modeButton: {
-        flex: 1,
+        flexGrow: 1,
         paddingVertical: 12,
-        paddingHorizontal: 6,
+        paddingHorizontal: 8,
         borderRadius: 8,
         overflow: 'hidden',
         alignItems: 'center',
@@ -278,12 +276,11 @@ const styles = StyleSheet.create({
         color: colors.primary,
     },
     inputSection: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     label: {
         fontFamily,
@@ -292,11 +289,9 @@ const styles = StyleSheet.create({
         color: colors.secondary,
         letterSpacing: 1,
     },
-    input: {
-        fontFamily,
-        fontSize: 40,
-        fontWeight: '300',
-        color: colors.primary,
+    inputContainer: {
+        flex: 1,
+        minHeight: 50,
     },
     breakdownGrid: {
         flexDirection: 'row',
@@ -304,13 +299,12 @@ const styles = StyleSheet.create({
     },
     breakdownItem: {
         flex: 1,
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 12,
         padding: 12,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         alignItems: 'center',
         gap: 4,
+        ...shadows.card,
     },
     breakdownValue: {
         fontFamily,
@@ -325,12 +319,11 @@ const styles = StyleSheet.create({
         letterSpacing: 0.5,
     },
     timeInputGroup: {
-        backgroundColor: colors.input,
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
         gap: 8,
+        ...shadows.card,
     },
     timeInputLabel: {
         fontFamily,
@@ -368,13 +361,12 @@ const styles = StyleSheet.create({
         marginHorizontal: 4,
     },
     resultContainer: {
-        backgroundColor: colors.input,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 24,
         alignItems: 'center',
         gap: 4,
+        ...shadows.card,
     },
     resultLabel: {
         fontFamily,
@@ -396,16 +388,17 @@ const styles = StyleSheet.create({
     },
     copiedBadge: {
         position: 'absolute',
-        top: 8,
-        right: 8,
+        top: 12,
+        right: 12,
         backgroundColor: colors.accent,
         paddingHorizontal: 12,
-        paddingVertical: 4,
+        paddingVertical: 6,
         borderRadius: 12,
         zIndex: 1,
+        ...shadows.glow,
     },
     copiedText: {
-        color: colors.main,
+        color: colors.primary,
         fontSize: 12,
         fontWeight: '600',
     },
