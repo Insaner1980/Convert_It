@@ -2,7 +2,7 @@
 
 **Project:** UnitX - Premium Mobile Conversion Utility
 **Platform:** React Native (Expo) + TypeScript
-**Last Updated:** 2026-01-10
+**Last Updated:** 2026-01-12
 
 ---
 
@@ -21,6 +21,11 @@
 - Run `npm run lint` before delivering code
 - Fix any errors before saying "Valmis testattavaksi"
 - Use `npm run lint:fix` to auto-fix simple issues
+
+**UI Changes (IMPORTANT):**
+- When the user requests UI changes, ALWAYS use the `/frontend-design` skill
+- This ensures high-quality, production-grade UI design
+- Examples: new components, layout changes, styling updates, visual improvements
 
 ---
 
@@ -451,4 +456,4 @@ Before delivering:
 
 ---
 
-**Last Updated:** 2026-01-10
+**Last Updated:** 2026-01-12

@@ -87,16 +87,13 @@ export const YeastConverter: React.FC = () => {
                 ))}
             </View>
 
-            {/* Results */}
+            {/* Results - only show conversions to OTHER types */}
             {conversions && (
                 <View style={styles.results}>
-                    {conversions.map((conv) => (
+                    {conversions.filter(conv => conv.id !== fromType).map((conv) => (
                         <TouchableOpacity
                             key={conv.id}
-                            style={[
-                                styles.resultCard,
-                                conv.id === fromType && styles.resultCardActive
-                            ]}
+                            style={styles.resultCard}
                             onPress={() => handleCopy(`${conv.amount}g`, conv.id)}
                             activeOpacity={0.7}
                         >
@@ -106,10 +103,7 @@ export const YeastConverter: React.FC = () => {
                                 </View>
                             )}
                             <Text style={styles.resultLabel}>{conv.label}</Text>
-                            <Text style={[
-                                styles.resultValue,
-                                conv.id === fromType && styles.resultValueActive
-                            ]}>
+                            <Text style={styles.resultValue}>
                                 {conv.amount}g
                             </Text>
                         </TouchableOpacity>
@@ -191,9 +185,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         ...shadows.card,
     },
-    resultCardActive: {
-        backgroundColor: colors.accent + '20',
-    },
     resultLabel: {
         fontFamily,
         fontSize: 14,
@@ -204,9 +195,6 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         color: colors.primary,
-    },
-    resultValueActive: {
-        color: colors.accent,
     },
     copiedBadge: {
         position: 'absolute',

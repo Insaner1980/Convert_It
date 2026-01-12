@@ -259,7 +259,7 @@ export const CurrencyScreen: React.FC = () => {
                         }}
                     >
                         <View style={styles.addButtonIcon}>
-                            <Plus size={18} color={colors.accent} />
+                            <Plus size={18} color={colors.primary} />
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.subtle },
     modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
     modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderBottomWidth: 1, borderBottomColor: colors.subtle + '40' },
-    modalOptionSelected: { backgroundColor: colors.accent + '15' },
+    modalOptionSelected: {},
     modalOptionLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
     modalOptionText: { fontSize: 16, color: colors.primary },
     modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: colors.card,
+        backgroundColor: colors.accent,
         alignItems: 'center',
         justifyContent: 'center',
         ...shadows.button,

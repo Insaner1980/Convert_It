@@ -127,6 +127,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                 containerStyle={styles.fractionInputContainer}
                                 inputStyle={styles.fractionInputStyle}
                                 fontSize={40}
+                                compactMode
                                 value={numerator}
                                 onChangeText={setNumerator}
                                 keyboardType="numeric"
@@ -141,6 +142,7 @@ export const FractionDecimalConverter: React.FC = () => {
                                 containerStyle={styles.fractionInputContainer}
                                 inputStyle={styles.fractionInputStyle}
                                 fontSize={40}
+                                compactMode
                                 value={denominator}
                                 onChangeText={setDenominator}
                                 keyboardType="numeric"
@@ -280,11 +282,13 @@ const styles = StyleSheet.create({
         ...shadows.card,
     },
     fractionPart: {
+        flex: 1,
         alignItems: 'center',
         gap: 8,
+        overflow: 'hidden',
     },
     fractionInputContainer: {
-        flex: 1,
+        width: '100%',
         minHeight: 50,
     },
     fractionInputStyle: {

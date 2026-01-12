@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Arrow gradient (dark to light copper) -->
+    <linearGradient id="arrowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3d2520"/>
+      <stop offset="12%" stop-color="#5a3530"/>
+      <stop offset="25%" stop-color="#7a4a40"/>
+      <stop offset="40%" stop-color="#996055"/>
+      <stop offset="55%" stop-color="#b87565"/>
+      <stop offset="70%" stop-color="#c98878"/>
+      <stop offset="85%" stop-color="#daa090"/>
+      <stop offset="100%" stop-color="#e8b8a8"/>
+    </linearGradient>
+
+    <!-- Flipped arrow gradient (for left arrow) -->
+    <linearGradient id="arrowGradientFlipped" x1="100%" y1="0%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#3d2520"/>
+      <stop offset="12%" stop-color="#5a3530"/>
+      <stop offset="25%" stop-color="#7a4a40"/>
+      <stop offset="40%" stop-color="#996055"/>
+      <stop offset="55%" stop-color="#b87565"/>
+      <stop offset="70%" stop-color="#c98878"/>
+      <stop offset="85%" stop-color="#daa090"/>
+      <stop offset="100%" stop-color="#e8b8a8"/>
+    </linearGradient>
+
+    <!-- Lens flare gradient -->
+    <linearGradient id="flareGradient" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#c9785d" stop-opacity="0"/>
+      <stop offset="15%" stop-color="#c9785d" stop-opacity="0.3"/>
+      <stop offset="40%" stop-color="#c9785d" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#c9785d" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#c9785d" stop-opacity="0.6"/>
+      <stop offset="85%" stop-color="#c9785d" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#c9785d" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Center glow gradient -->
+    <linearGradient id="centerGlow" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#f5f5f7" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#e8b8a8" stop-opacity="0.6"/>
+      <stop offset="50%" stop-color="#f5f5f7" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#e8b8a8" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#f5f5f7" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#141416"/>
+
+  <!-- Top arrow (pointing right) - positioned above center -->
+  <g transform="translate(262, 222)">
+    <path d="M 0 30 Q 0 10, 20 10 L 480 125 L 20 240 Q 0 240, 0 220 L 0 180 L 200 125 L 0 70 L 0 30 Z"
+          fill="url(#arrowGradient)"/>
+  </g>
+
+  <!-- Lens flare - main ray -->
+  <ellipse cx="512" cy="512" rx="450" ry="6" fill="url(#flareGradient)"/>
+
+  <!-- Lens flare - secondary ray -->
+  <ellipse cx="512" cy="512" rx="350" ry="10" fill="url(#flareGradient)" opacity="0.7"/>
+
+  <!-- Lens flare - center glow -->
+  <ellipse cx="512" cy="512" rx="150" ry="16" fill="url(#centerGlow)"/>
+
+  <!-- Bottom arrow (pointing left) - positioned below center -->
+  <g transform="translate(762, 552) scale(-1, 1)">
+    <path d="M 0 30 Q 0 10, 20 10 L 480 125 L 20 240 Q 0 240, 0 220 L 0 180 L 200 125 L 0 70 L 0 30 Z"
+          fill="url(#arrowGradientFlipped)"/>
+  </g>
+</svg>

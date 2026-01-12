@@ -1129,7 +1129,7 @@ const styles = StyleSheet.create({
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: colors.subtle },
     modalTitle: { fontSize: 18, fontWeight: '600', color: colors.primary },
     modalOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderBottomWidth: 1, borderBottomColor: colors.subtle + '40' },
-    modalOptionSelected: { backgroundColor: colors.accent + '15' },
+    modalOptionSelected: {},
     modalOptionText: { fontSize: 16, color: colors.primary },
     modalOptionTextSelected: { color: colors.accent, fontWeight: '600' },
 

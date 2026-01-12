@@ -73,7 +73,7 @@ export const ServingSizeAdjuster: React.FC = () => {
                             style={styles.adjustButton}
                             onPress={() => adjustServings(-1)}
                         >
-                            <Minus size={20} color={colors.accent} />
+                            <Minus size={20} color={colors.primary} />
                         </AnimatedPressable>
                         <TextInput
                             style={styles.servingNumberLarge}
@@ -86,7 +86,7 @@ export const ServingSizeAdjuster: React.FC = () => {
                             style={styles.adjustButton}
                             onPress={() => adjustServings(1)}
                         >
-                            <Plus size={20} color={colors.accent} />
+                            <Plus size={20} color={colors.primary} />
                         </AnimatedPressable>
                     </View>
                 </View>
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: colors.elevated,
+        backgroundColor: colors.accent,
         alignItems: 'center',
         justifyContent: 'center',
         ...shadows.button,

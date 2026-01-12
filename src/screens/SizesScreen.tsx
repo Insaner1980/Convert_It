@@ -618,9 +618,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: colors.subtle + '40',
     },
-    modalOptionSelected: {
-        backgroundColor: colors.accent + '15',
-    },
+    modalOptionSelected: {},
     modalOptionText: {
         fontSize: 16,
         color: colors.primary,

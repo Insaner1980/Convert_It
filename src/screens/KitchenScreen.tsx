@@ -76,6 +76,8 @@ export const KitchenScreen: React.FC = () => {
     const [toUnitId, setToUnitId] = useState('g');
     const [ovenTemp, setOvenTemp] = useState(200); // Always stored as Conventional °C
     const [ovenMode, setOvenMode] = useState<'conventional' | 'fan' | 'fahrenheit'>('conventional');
+    const [ovenInputText, setOvenInputText] = useState(''); // For editable input
+    const [ovenInputFocused, setOvenInputFocused] = useState(false);
 
     // Custom ingredients added by user
     const [customIngredients, setCustomIngredients] = useState<KitchenIngredient[]>([]);
@@ -366,18 +368,15 @@ export const KitchenScreen: React.FC = () => {
         const current = modes[ovenMode];
 
         const adjustTemp = (direction: 1 | -1) => {
-            let amount = 5; // Default C step
-            if (ovenMode === 'fahrenheit') amount = 10; // F step
-
             let newConv = conv;
 
             if (ovenMode === 'conventional' || ovenMode === 'fan') {
-                newConv = conv + (5 * direction);
+                // 1°C step for Celsius modes
+                newConv = conv + direction;
             } else {
-                // Adjust F directly-ish
-                const targetF = faren + (amount * direction);
-                // Convert back to C and round to nearest 5
-                newConv = Math.round((targetF - 32) * 5 / 9 / 5) * 5;
+                // 1°F step for Fahrenheit - convert back to C
+                const targetF = faren + direction;
+                newConv = Math.round((targetF - 32) * 5 / 9);
             }
 
             setOvenTemp(Math.max(0, Math.min(300, newConv)));
@@ -385,7 +384,15 @@ export const KitchenScreen: React.FC = () => {
 
         // Handle direct temperature input
         const handleTempInput = (text: string) => {
-            const num = parseInt(text) || 0;
+            // Allow only digits, update input text state
+            const cleaned = text.replace(/[^0-9]/g, '');
+            setOvenInputText(cleaned);
+
+            // Update actual temp if valid number
+            if (cleaned === '') return;
+            const num = parseInt(cleaned);
+            if (isNaN(num)) return;
+
             let newConv = num;
 
             if (ovenMode === 'fan') {
@@ -399,11 +406,40 @@ export const KitchenScreen: React.FC = () => {
             setOvenTemp(Math.max(0, Math.min(300, newConv)));
         };
 
+        // Handle input focus
+        const handleInputFocus = () => {
+            setOvenInputFocused(true);
+            // Pre-fill with current value
+            if (ovenMode === 'fahrenheit') {
+                setOvenInputText(faren.toString());
+            } else if (ovenMode === 'fan') {
+                setOvenInputText(fan.toString());
+            } else {
+                setOvenInputText(conv.toString());
+            }
+        };
+
+        // Handle input blur
+        const handleInputBlur = () => {
+            setOvenInputFocused(false);
+            setOvenInputText('');
+        };
+
         // Get current numeric value for input
         const getCurrentNumericValue = () => {
+            // When focused, show what user is typing (can be empty)
+            if (ovenInputFocused) return ovenInputText;
+            // When not focused, show calculated value
             if (ovenMode === 'fahrenheit') return faren.toString();
             if (ovenMode === 'fan') return fan.toString();
             return conv.toString();
+        };
+
+        // Handle mode switch - reset input state
+        const handleModeSwitch = (modeKey: 'conventional' | 'fan' | 'fahrenheit') => {
+            setOvenInputFocused(false);
+            setOvenInputText('');
+            setOvenMode(modeKey);
         };
 
         // Helper to render a result card that acts as a mode switch
@@ -414,7 +450,7 @@ export const KitchenScreen: React.FC = () => {
                 <TouchableOpacity
                     key={modeKey}
                     style={[styles.ovenResultCard, { borderColor: colors.subtle }]}
-                    onPress={() => setOvenMode(modeKey)}
+                    onPress={() => handleModeSwitch(modeKey)}
                 >
                     <Text style={[styles.ovenResultLabel, { color: colors.secondary }]}>{m.label}</Text>
                     <Text style={[styles.ovenResultValue, { color: colors.primary }]}>{m.value}</Text>
@@ -432,21 +468,23 @@ export const KitchenScreen: React.FC = () => {
                         <Text style={[styles.ovenControlLabel, { color: colors.secondary }]}>{current.label}</Text>
                         <View style={styles.ovenControlRow}>
                             <TouchableOpacity onPress={() => adjustTemp(-1)} style={styles.tempButton}>
-                                <Minus size={24} color={colors.accent} />
+                                <Minus size={24} color={colors.primary} />
                             </TouchableOpacity>
                             <View style={styles.ovenValueContainer}>
                                 <TextInput
                                     style={styles.ovenMainInput}
                                     value={getCurrentNumericValue()}
                                     onChangeText={handleTempInput}
+                                    onFocus={handleInputFocus}
+                                    onBlur={handleInputBlur}
                                     keyboardType="numeric"
                                     maxLength={3}
                                     selectTextOnFocus
                                 />
                                 <Text style={styles.ovenUnit}>{ovenMode === 'fahrenheit' ? '°F' : '°C'}</Text>
                             </View>
-                            <TouchableOpacity onPress={() => adjustTemp(1)} style={[styles.tempButton, { backgroundColor: colors.accent + '20', borderColor: colors.subtle }]}>
-                                <Plus size={24} color={colors.accent} />
+                            <TouchableOpacity onPress={() => adjustTemp(1)} style={styles.tempButton}>
+                                <Plus size={24} color={colors.primary} />
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -564,7 +602,7 @@ export const KitchenScreen: React.FC = () => {
                                     </Text>
                                 </View>
                                 <View style={styles.searchResultAddButton}>
-                                    <Plus size={18} color={colors.accent} />
+                                    <Plus size={18} color={colors.primary} />
                                 </View>
                             </TouchableOpacity>
                         )}
@@ -759,11 +797,10 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: colors.card,
+        backgroundColor: colors.accent,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: colors.subtle,
+        ...shadows.button,
     },
     noResults: { color: colors.secondary, textAlign: 'center', padding: 40 },
     loadingOverlay: {
@@ -783,7 +820,7 @@ const styles = StyleSheet.create({
     ovenControlCard: { backgroundColor: colors.card, borderRadius: 24, padding: 24, gap: 16, ...shadows.card },
     ovenControlLabel: { fontSize: 14, fontWeight: '600', color: colors.secondary, textTransform: 'uppercase', letterSpacing: 1, textAlign: 'center' },
     ovenControlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-    tempButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.subtle + '40', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.subtle },
+    tempButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center', ...shadows.button },
     ovenMainInput: { fontSize: 56, fontWeight: '300', color: colors.primary, textAlign: 'center', minWidth: 100 },
     ovenUnit: { fontSize: 24, fontWeight: '300', color: colors.primary },
     ovenResultsRow: { flexDirection: 'row', gap: 12 },

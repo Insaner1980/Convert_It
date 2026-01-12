@@ -112,16 +112,13 @@ export const ButterConverter: React.FC = () => {
                 ))}
             </View>
 
-            {/* Results */}
+            {/* Results - only show conversions to OTHER units */}
             {conversions && (
                 <View style={styles.results}>
-                    {conversions.map((conv) => (
+                    {conversions.filter(conv => conv.id !== fromUnit).map((conv) => (
                         <TouchableOpacity
                             key={conv.id}
-                            style={[
-                                styles.resultCard,
-                                conv.id === fromUnit && styles.resultCardActive
-                            ]}
+                            style={styles.resultCard}
                             onPress={() => handleCopy(conv.amount, conv.id)}
                             activeOpacity={0.7}
                         >
@@ -131,10 +128,7 @@ export const ButterConverter: React.FC = () => {
                                 </View>
                             )}
                             <Text style={styles.resultLabel}>{conv.label}</Text>
-                            <Text style={[
-                                styles.resultValue,
-                                conv.id === fromUnit && styles.resultValueActive
-                            ]}>
+                            <Text style={styles.resultValue}>
                                 {conv.amount}
                             </Text>
                         </TouchableOpacity>
@@ -211,9 +205,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         ...shadows.card,
     },
-    resultCardActive: {
-        backgroundColor: colors.accent + '20',
-    },
     resultLabel: {
         fontFamily,
         fontSize: 14,
@@ -224,9 +215,6 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         color: colors.primary,
-    },
-    resultValueActive: {
-        color: colors.accent,
     },
     copiedBadge: {
         position: 'absolute',

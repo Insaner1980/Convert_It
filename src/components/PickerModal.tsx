@@ -83,7 +83,7 @@ export const PickerModal: React.FC<PickerModalProps> = ({
                     {onAdd && (
                         <TouchableOpacity style={styles.addButton} onPress={onAdd}>
                             <View style={styles.addButtonIcon}>
-                                <Plus size={18} color={colors.accent} />
+                                <Plus size={18} color={colors.primary} />
                             </View>
                         </TouchableOpacity>
                     )}
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
         borderBottomColor: colors.subtle + '40',
     },
     modalOptionSelected: {
-        backgroundColor: colors.accent + '15',
+        // No background - only text and checkmark highlighted
     },
     modalOptionText: {
         fontSize: 16,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: colors.card,
+        backgroundColor: colors.accent,
         alignItems: 'center',
         justifyContent: 'center',
         ...shadows.button,
